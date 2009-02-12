@@ -4,6 +4,6 @@
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
-PKG_NAME="ologicd"
+PKG_NAME="vala-dbus-binding-tool"
 
 . gnome-autogen.sh

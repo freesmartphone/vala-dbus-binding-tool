@@ -8,14 +8,38 @@ public errordomain GeneratorError {
 	UNKNOWN_DBUS_TYPE
 }
 
-class GeneratedNamespace {
+internal class GeneratedNamespace {
 	public Gee.Map<string, Xml.Node*> interfaces
 		= new Gee.HashMap<string, Xml.Node*>(str_hash, str_equal, direct_equal);
 	public Gee.Map<string, GeneratedNamespace> namespaces
 		= new Gee.HashMap<string, GeneratedNamespace>(str_hash, str_equal, direct_equal);
 }
 
-public class BindingGenerator {
+public class BindingGenerator : Object {
+	
+	private static Set<string> registered_names = new HashSet<string>(str_hash, str_equal);
+	
+	static construct {
+		registered_names.add("using");
+		registered_names.add("namespace");
+		registered_names.add("public");
+		registered_names.add("private");
+		registered_names.add("internal");
+		registered_names.add("errordomain");
+		registered_names.add("class");
+		registered_names.add("struct");
+		registered_names.add("new");
+		registered_names.add("for");
+		registered_names.add("while");
+		registered_names.add("foreach");
+		registered_names.add("switch");
+		registered_names.add("case");
+		registered_names.add("static");
+		registered_names.add("unowned");
+		registered_names.add("weak");
+		registered_names.add("register");
+		registered_names.add("message");
+	}
 	
 	public static int main(string[] args) {
 		string[] split_name = args[0].split("/");
@@ -250,7 +274,7 @@ public class BindingGenerator {
 			
 		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), dbus_name);
-		output.printf("%spublic interface %s {\n", get_indent(), interface_name);
+		output.printf("%spublic interface %s : GLib.Object {\n", get_indent(), interface_name);
 		update_indent(+1);
 		
 		generate_members(node, interface_name);
@@ -333,7 +357,7 @@ public class BindingGenerator {
 			if (iter->name != ARG_ELTNAME)
 				continue;
 			
-			string param_name = iter->get_prop(NAME_ATTRNAME);
+			string param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
 			string param_type = "unknown";
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
@@ -391,7 +415,7 @@ public class BindingGenerator {
 			if (iter->name != ARG_ELTNAME)
 				continue;
 			
-			string param_name = iter->get_prop(NAME_ATTRNAME);
+			string param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
 			string param_type = "unknown";
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
@@ -455,7 +479,7 @@ public class BindingGenerator {
 			string tail3 = null;
 			
 			StringBuilder vala_type = new StringBuilder();
-			vala_type.append("HashTable<");
+			vala_type.append("GLib.HashTable<");
 			vala_type.append(parse_type(tail, out tail2, plural_to_singular(type_name) + "Key"));
 			vala_type.append(", ");
 			
@@ -512,8 +536,10 @@ public class BindingGenerator {
 		string[] parts = type_name.split("_");
 		StringBuilder capitalized_name = new StringBuilder();
 		foreach (string part in parts) {
-			capitalized_name.append(part.substring(0, 1).up());
-			capitalized_name.append(part.substring(1, part.length - 1));
+			if (part != "") {
+				capitalized_name.append(part.substring(0, 1).up());
+				capitalized_name.append(part.substring(1, part.length - 1));
+			}
 		}
 		return capitalized_name.str;
 	}
@@ -530,7 +556,13 @@ public class BindingGenerator {
 				uncapitalized_name.append_unichar(c);
 			}
 		}
-		name = uncapitalized_name.str;
+		return transform_registered_name(uncapitalized_name.str);
+	}
+	
+	private string transform_registered_name(string name) {
+		if (!name.contains("_") && registered_names.contains(name)) {
+			return name + "_";
+		}
 		return name;
 	}
 	
