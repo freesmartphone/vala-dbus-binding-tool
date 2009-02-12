@@ -39,6 +39,7 @@ public class BindingGenerator : Object {
 		registered_names.add("weak");
 		registered_names.add("register");
 		registered_names.add("message");
+		registered_names.add("get_type");
 	}
 	
 	public static int main(string[] args) {
@@ -560,7 +561,7 @@ public class BindingGenerator : Object {
 	}
 	
 	private string transform_registered_name(string name) {
-		if (!name.contains("_") && registered_names.contains(name)) {
+		if (registered_names.contains(name)) {
 			return name + "_";
 		}
 		return name;
