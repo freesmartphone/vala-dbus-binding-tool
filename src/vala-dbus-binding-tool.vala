@@ -161,7 +161,7 @@ public class BindingGenerator : Object {
 			string name;
 			while ((name = dir.read_name()) != null) {
 				if (name.has_suffix(".xml")) {
-					add_api_file(Path.build_filename(api_path, name));
+					add_api_file(api_path + name);
 				}
 			}
 		}
@@ -169,8 +169,7 @@ public class BindingGenerator : Object {
 		generate_namespace(root_namespace);
 	}
 	
-	private void add_api_file(string api_file) 
-                throws GeneratorError {
+	private void add_api_file(string api_file) throws GeneratorError {
 		// Parse the API document from path
 		Xml.Doc* api_doc = Parser.parse_file(api_file);
 		if (api_doc == null) {
@@ -184,8 +183,8 @@ public class BindingGenerator : Object {
 	
 	private FileStream output;
 	
-	private void create_binding_file(string name) throws GeneratorError{
-		output = FileStream.open(name, "w+");
+	private void create_binding_file(string name) {
+		output = FileStream.open(name, "w");
 		if (output == null) {
 			throw new GeneratorError.CANT_CREATE_FILE(name);
 		}
@@ -313,8 +312,8 @@ public class BindingGenerator : Object {
 			
 			create_binding_file(output_directory + "/" + string.joinv("-", namespace_names).down() + ".vala");
 			
-			output.printf("\n");
 			foreach (string name in namespace_names) {
+				output.printf("\n");
 				output.printf("%snamespace %s {\n", get_indent(), name);
 				update_indent(+1);
 			}
@@ -346,7 +345,7 @@ public class BindingGenerator : Object {
 			throws GeneratorError {
 		string dbus_name = node->get_prop(NAME_ATTRNAME);
 			
-		//output.printf("\n");
+		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), dbus_name);
 		output.printf("%spublic interface %s : GLib.Object {\n", get_indent(), interface_name);
 		update_indent(+1);
@@ -454,9 +453,6 @@ public class BindingGenerator : Object {
 				first_param = false;
 				break;
 			case OUT_ATTRVALUE:
-                                if(param_type == null ) {
-                                    param_type = "void";
-                                }
 				if (out_param_count != 1) {
 					if (!first_param) {
 						args_builder.append(", ");
@@ -468,7 +464,7 @@ public class BindingGenerator : Object {
 					args_builder.append(param_name);
 					first_param = false;
 				} else {
-					return_value_type = param_type == null ?  param_type:"void";
+					return_value_type = param_type;
 				}
 				break;
 			}
