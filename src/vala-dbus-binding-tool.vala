@@ -453,6 +453,8 @@ public class BindingGenerator : Object {
 				first_param = false;
 				break;
 			case OUT_ATTRVALUE:
+                                if (param_type == null) {
+                                        param_type = "void";
 				if (out_param_count != 1) {
 					if (!first_param) {
 						args_builder.append(", ");
