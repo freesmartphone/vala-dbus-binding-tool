@@ -208,7 +208,7 @@ public class BindingGenerator : Object {
 			string dbus_interface_name = iter->get_prop(NAME_ATTRNAME);
 			string[] split_name = dbus_interface_name.split(".");
 			string short_name = split_name[split_name.length - 1];
-			message(dbus_interface_name);
+			
 			// Removing stripped root namespaces
 			int i = 0;
 			for (; i < split_name.length - 1; i++) {
@@ -221,7 +221,6 @@ public class BindingGenerator : Object {
 			for (; i < split_name.length - 1; i++) {
 				string part = split_name[i];
 				
-				message("%s", part);
 				if (namespace_renaming.contains(part) && namespace_renaming.get(part) != "") {
 					part = namespace_renaming.get(part);
 				}
@@ -285,7 +284,6 @@ public class BindingGenerator : Object {
 			}
 			
 			if (!ns.interfaces.contains(interface_name)) {
-				message("adding");
 				ns.interfaces.set(interface_name, iter);
 			} else {
 				//TODO Error already existing interface
