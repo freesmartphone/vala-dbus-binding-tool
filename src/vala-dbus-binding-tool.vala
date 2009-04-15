@@ -183,7 +183,7 @@ public class BindingGenerator : Object {
 
 	private FileStream output;
 
-	private void create_binding_file(string name) {
+	private void create_binding_file(string name) throws GeneratorError {
 		output = FileStream.open(name, "w");
 		if (output == null) {
 			throw new GeneratorError.CANT_CREATE_FILE(name);
