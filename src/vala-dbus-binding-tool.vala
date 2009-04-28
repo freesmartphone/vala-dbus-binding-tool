@@ -157,7 +157,7 @@ public class BindingGenerator : Object {
 		if (api_path.has_suffix(".xml")) {
 			add_api_file(api_path);
 		} else {
-			GLib.Dir dir = GLib.Dir.open(api_path);
+			GLib.Dir dir = new GLib.Dir(api_path);
 			string name;
 			while ((name = dir.read_name()) != null) {
 				if (name.has_suffix(".xml")) {
