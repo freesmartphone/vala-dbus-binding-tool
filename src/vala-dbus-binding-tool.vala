@@ -11,7 +11,7 @@ public errordomain GeneratorError {
 internal class GeneratedNamespace {
 	public GeneratedNamespace parent;
 	public string name;
-	public Gee.Map<string, Xml.Node*> interfaces
+	public Gee.Map<string, Xml.Node*> members
 		= new Gee.HashMap<string, Xml.Node*>(str_hash, str_equal, direct_equal);
 	public Gee.Map<string, GeneratedNamespace> namespaces
 		= new Gee.HashMap<string, GeneratedNamespace>(str_hash, str_equal, direct_equal);
@@ -150,6 +150,9 @@ public class BindingGenerator : Object {
 	private static const string DIRECTION_ATTRNAME = "direction";
 	private static const string IN_ATTRVALUE = "in";
 	private static const string OUT_ATTRVALUE = "out";
+	private static const string ENUMERATION_ELTNAME = "enumeration";
+	private static const string MEMBER_ELTNAME = "member";
+	private static const string VALUE_ATTRNAME = "value";
 
 	private void generate_bindings(string api_path)
 			throws GeneratorError, GLib.FileError {
@@ -202,7 +205,8 @@ public class BindingGenerator : Object {
             if (iter->type != ElementType.ELEMENT_NODE)
                 continue;
 
-			if (iter->name != INTERFACE_ELTNAME)
+			if (iter->name != INTERFACE_ELTNAME
+				&& iter->name != ENUMERATION_ELTNAME)
 				continue;
 
 			string dbus_interface_name = iter->get_prop(NAME_ATTRNAME);
@@ -225,12 +229,12 @@ public class BindingGenerator : Object {
 					part = namespace_renaming.get(part);
 				}
 
-				if (ns.interfaces.contains(part) && inner_interface_strategy_concat) {
+				if (ns.members.contains(part) && inner_interface_strategy_concat) {
 					if (ns.namespaces.contains(part)) {
 						GeneratedNamespace child = ns.namespaces.get(part);
-						foreach (string interf_name in child.interfaces.get_keys()) {
-							Xml.Node* interf = child.interfaces.get(interf_name);
-							ns.interfaces.set(part + interf_name, interf);
+						foreach (string interf_name in child.members.get_keys()) {
+							Xml.Node* interf = child.members.get(interf_name);
+							ns.members.set(part + interf_name, interf);
 						}
 						ns.namespaces.remove(part);
 						child.parent = null;
@@ -249,9 +253,9 @@ public class BindingGenerator : Object {
 					ns.namespaces.set(part, child);
 				}
 
-				if (ns.interfaces.contains(part)) {
-						child.interfaces.set(part, ns.interfaces.get(part));
-						ns.interfaces.remove(part);
+				if (ns.members.contains(part)) {
+						child.members.set(part, ns.members.get(part));
+						ns.members.remove(part);
 				}
 
 				ns = child;
@@ -269,9 +273,9 @@ public class BindingGenerator : Object {
 
 				if (ns.namespaces.contains(short_name)) {
 					GeneratedNamespace child = ns.namespaces.get(short_name);
-					foreach (string interf_name in child.interfaces.get_keys()) {
-						Xml.Node* interf = child.interfaces.get(interf_name);
-						ns.interfaces.set(short_name + interf_name, interf);
+					foreach (string interf_name in child.members.get_keys()) {
+						Xml.Node* interf = child.members.get(interf_name);
+						ns.members.set(short_name + interf_name, interf);
 					}
 					ns.namespaces.remove(short_name);
 					child.parent = null;
@@ -283,8 +287,8 @@ public class BindingGenerator : Object {
 				interface_name = short_name;
 			}
 
-			if (!ns.interfaces.contains(interface_name)) {
-				ns.interfaces.set(interface_name, iter);
+			if (!ns.members.contains(interface_name)) {
+				ns.members.set(interface_name, iter);
 			} else {
 				//TODO Error already existing interface
 			}
@@ -295,7 +299,7 @@ public class BindingGenerator : Object {
 
 	private void generate_namespace(GeneratedNamespace ns)
 			throws GeneratorError {
-		if (ns.interfaces.size > 0) {
+		if (ns.members.size > 0) {
 			string[] reversed_namespace_names = new string[0];
 			GeneratedNamespace a_namespace = ns;
 			while (a_namespace.name != null) {
@@ -316,9 +320,17 @@ public class BindingGenerator : Object {
 				update_indent(+1);
 			}
 
-			foreach (string name in ns.interfaces.get_keys()) {
-				Xml.Node* api = ns.interfaces.get(name);
-				generate_interface(name, api);
+			foreach (string name in ns.members.get_keys()) {
+				Xml.Node* api = ns.members.get(name);
+
+				switch (api->name) {
+				case INTERFACE_ELTNAME:
+					generate_interface(name, api);
+					break;
+				case ENUMERATION_ELTNAME:
+					generate_enumeration(name, api);
+					break;
+				}
 			}
 
 			foreach (string name in namespace_names) {
@@ -360,6 +372,36 @@ public class BindingGenerator : Object {
 			}
 			structs_to_generate.clear();
 		}
+	}
+
+	private void generate_enumeration(string enumeration_name, Xml.Node* node)
+			throws GeneratorError {
+		string type = node->get_prop(TYPE_ATTRNAME);
+		bool string_enum = type == "s";
+
+		output.printf("\n");
+		output.printf("%s[DBus%s]\n", get_indent(), string_enum ? " (use_string_marshalling = true)" : "");
+		output.printf("%spublic enum %s {\n", get_indent(), enumeration_name);
+		update_indent(+1);
+
+		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+			if (iter->type != ElementType.ELEMENT_NODE)
+				continue;
+
+			switch (iter->name) {
+			case MEMBER_ELTNAME:
+				string member_name = normalized_to_upper_case(iter->get_prop(NAME_ATTRNAME));
+				string member_value = iter->get_prop(VALUE_ATTRNAME);
+				if (string_enum) {
+					output.printf("%s[DBus (value=\"%s\")]\n", get_indent(), member_value);
+				}
+				output.printf("%s%s%s%s\n", get_indent(), member_name, string_enum ? "" : " = member_value", iter->next == null ? "" : ",");
+				break;
+			}
+		}
+
+		update_indent(-1);
+		output.printf("%s}\n", get_indent());
 	}
 
 	private void generate_struct(string name, string content_signature, string namespace_name)
@@ -631,6 +673,10 @@ public class BindingGenerator : Object {
 			}
 		}
 		return transform_registered_name(uncapitalized_name.str);
+	}
+
+	private string normalized_to_upper_case(string name) {
+		return name.replace("-", "_").up();
 	}
 
 	private string transform_registered_name(string name) {
