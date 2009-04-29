@@ -169,6 +169,7 @@ public class BindingGenerator : Object {
 			}
 		}
 
+		index_names(root_namespace);
 		generate_namespace(root_namespace);
 	}
 
@@ -295,22 +296,48 @@ public class BindingGenerator : Object {
 		}
 	}
 
+	private void index_names(GeneratedNamespace ns) {
+		if (ns.members.size > 0) {
+			string namespace_name = string.joinv(".", get_namespace_path(ns));
+
+			foreach (string name in ns.members.get_keys()) {
+				Xml.Node* api = ns.members.get(name);
+				string dbus_name = api->get_prop(NAME_ATTRNAME);
+				name_index.set(dbus_name, namespace_name + "." + name);
+			}
+		}
+
+		foreach (string name in ns.namespaces.get_keys()) {
+			GeneratedNamespace child = ns.namespaces.get(name);
+
+			index_names(child);
+		}
+	}
+
+	private string[] get_namespace_path(GeneratedNamespace ns) {
+		string[] reversed_namespace_names = new string[0];
+		GeneratedNamespace a_namespace = ns;
+		while (a_namespace.name != null) {
+			reversed_namespace_names += a_namespace.name;
+			a_namespace = a_namespace.parent;
+		}
+
+		string[] namespace_names = new string[0];
+		for (int i = reversed_namespace_names.length - 1; i >= 0; i--) {
+			namespace_names += reversed_namespace_names[i];
+		}
+
+		return namespace_names;
+	}
+
 	private GeneratedNamespace root_namespace = new GeneratedNamespace();
+
+	private Map<string, string> name_index = new HashMap<string, string>(str_hash, str_equal, str_equal);
 
 	private void generate_namespace(GeneratedNamespace ns)
 			throws GeneratorError {
 		if (ns.members.size > 0) {
-			string[] reversed_namespace_names = new string[0];
-			GeneratedNamespace a_namespace = ns;
-			while (a_namespace.name != null) {
-				reversed_namespace_names += a_namespace.name;
-				a_namespace = a_namespace.parent;
-			}
-
-			string[] namespace_names = new string[0];
-			for (int i = reversed_namespace_names.length - 1; i >= 0; i--) {
-				namespace_names += reversed_namespace_names[i];
-			}
+			string[] namespace_names = get_namespace_path(ns);
 
 			create_binding_file(output_directory + "/" + string.joinv("-", namespace_names).down() + ".vala");
 
