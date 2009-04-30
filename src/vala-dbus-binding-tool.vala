@@ -139,6 +139,8 @@ public class BindingGenerator : Object {
 	private Map<string,string> namespace_renaming;
 	private string command;
 	private bool inner_interface_strategy_concat = true;
+	
+	private static const string FSO_NAMESPACE = "http://www.freesmartphone.org/schemas/DBusSpecExtension";
 
 	private static const string INTERFACE_ELTNAME = "interface";
 	private static const string METHOD_ELTNAME = "method";
@@ -501,6 +503,7 @@ public class BindingGenerator : Object {
 			string param_type = "unknown";
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+					iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
 					get_struct_name(interface_name, param_name));
 			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
 				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
@@ -562,6 +565,7 @@ public class BindingGenerator : Object {
 			string param_type = "unknown";
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+					iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
 					interface_name + capitalize(param_name));
 			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
 				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
@@ -587,8 +591,11 @@ public class BindingGenerator : Object {
 			throws GeneratorError {
 	}
 
-	private string translate_type(string type, string type_name)
+	private string translate_type(string type, string? fso_type, string type_name)
 			throws GeneratorError {
+		if (fso_type != null) {
+			return name_index.get(fso_type);
+		}
 		string tail = null;
 		return parse_type(type, out tail, type_name).replace("][", ",");
 	}
