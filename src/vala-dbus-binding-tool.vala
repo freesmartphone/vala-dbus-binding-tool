@@ -145,7 +145,6 @@ public class BindingGenerator : Object {
 	private static const string INTERFACE_ELTNAME = "interface";
 	private static const string METHOD_ELTNAME = "method";
 	private static const string SIGNAL_ELTNAME = "signal";
-	private static const string ERROR_ELTNAME = "error";
 	private static const string ARG_ELTNAME = "arg";
 	private static const string NAME_ATTRNAME = "name";
 	private static const string TYPE_ATTRNAME = "type";
@@ -155,6 +154,9 @@ public class BindingGenerator : Object {
 	private static const string ENUMERATION_ELTNAME = "enumeration";
 	private static const string MEMBER_ELTNAME = "member";
 	private static const string VALUE_ATTRNAME = "value";
+	private static const string ERRORDOMAIN_ELTNAME = "errordomain";
+	private static const string ERROR_ELTNAME = "error";
+	private static const string THROWS_ELTNAME = "throws";
 
 	private void generate_bindings(string api_path)
 			throws GeneratorError, GLib.FileError {
@@ -209,7 +211,8 @@ public class BindingGenerator : Object {
                 continue;
 
 			if (iter->name != INTERFACE_ELTNAME
-				&& iter->name != ENUMERATION_ELTNAME)
+				&& iter->name != ENUMERATION_ELTNAME
+				&& iter->name != ERRORDOMAIN_ELTNAME)
 				continue;
 
 			string dbus_interface_name = iter->get_prop(NAME_ATTRNAME);
@@ -359,6 +362,9 @@ public class BindingGenerator : Object {
 				case ENUMERATION_ELTNAME:
 					generate_enumeration(name, api);
 					break;
+				case ERRORDOMAIN_ELTNAME:
+					generate_errordomain(name, api);
+					break;
 				}
 			}
 
@@ -425,6 +431,34 @@ public class BindingGenerator : Object {
 					output.printf("%s[DBus (value=\"%s\")]\n", get_indent(), member_value);
 				}
 				output.printf("%s%s%s%s\n", get_indent(), member_name, string_enum ? "" : " = member_value", iter->next == null ? "" : ",");
+				break;
+			}
+		}
+
+		update_indent(-1);
+		output.printf("%s}\n", get_indent());
+	}
+
+	private void generate_errordomain(string errordomain_name, Xml.Node* node)
+			throws GeneratorError {
+		string dbus_name = node->get_prop(NAME_ATTRNAME);
+
+		output.printf("\n");
+		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), dbus_name);
+		output.printf("%spublic errordomain %s {\n", get_indent(), errordomain_name);
+		update_indent(+1);
+
+		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+			if (iter->type != ElementType.ELEMENT_NODE)
+				continue;
+
+			switch (iter->name) {
+			case ERROR_ELTNAME:
+				string dbus_error_name = iter->get_prop(NAME_ATTRNAME);
+				string error_name = camel_case_to_upper_case(dbus_error_name);
+
+				output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), dbus_error_name);
+				output.printf("%s%s%s\n", get_indent(), error_name, iter->next == null ? "" : ",");
 				break;
 			}
 		}
@@ -543,9 +577,40 @@ public class BindingGenerator : Object {
 			}
 		}
 
+		bool first_error = true;
+		StringBuilder throws_builder = new StringBuilder();
+		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+			if (iter->type != ElementType.ELEMENT_NODE)
+				continue;
+
+			if (iter->name != THROWS_ELTNAME)
+				continue;
+
+			string errordomain_name = null;
+			try {
+				string fso_type = iter->get_prop(TYPE_ATTRNAME);
+				if (fso_type != null) {
+					errordomain_name = name_index.get(fso_type);
+				}
+			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+				stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
+					interface_name, name, ex.message);
+			}
+			
+			if (!first_error) {
+				throws_builder.append(", ");
+			}
+			throws_builder.append(errordomain_name);
+			first_error = false;
+		}
+		if (!first_error) {
+			throws_builder.append(", ");
+		}
+		throws_builder.append("DBus.Error");
+
 		output.printf("\n");
-		output.printf("%spublic abstract %s %s(%s) throws DBus.Error;\n",
-			get_indent(), return_value_type, name, args_builder.str);
+		output.printf("%spublic abstract %s %s(%s) throws %s;\n",
+			get_indent(), return_value_type, name, args_builder.str, throws_builder.str);
 	}
 
 	private void generate_signal(Xml.Node* node, string interface_name)
@@ -594,7 +659,11 @@ public class BindingGenerator : Object {
 	private string translate_type(string type, string? fso_type, string type_name)
 			throws GeneratorError {
 		if (fso_type != null) {
-			return name_index.get(fso_type);
+			var vala_type = name_index.get(fso_type);
+			if (vala_type == null) {
+				throw new GeneratorError.UNKNOWN_DBUS_TYPE(fso_type);
+			}
+			return vala_type;
 		}
 		string tail = null;
 		return parse_type(type, out tail, type_name).replace("][", ",");
@@ -711,6 +780,10 @@ public class BindingGenerator : Object {
 
 	private string normalized_to_upper_case(string name) {
 		return name.replace("-", "_").up();
+	}
+
+	private string camel_case_to_upper_case(string name) {
+		return uncapitalize(name).up();
 	}
 
 	private string transform_registered_name(string name) {
