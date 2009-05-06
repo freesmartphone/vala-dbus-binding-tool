@@ -158,6 +158,8 @@ public class BindingGenerator : Object {
 	private static const string ERRORDOMAIN_ELTNAME = "errordomain";
 	private static const string ERROR_ELTNAME = "error";
 	private static const string THROWS_ELTNAME = "throws";
+	private static const string STRUCT_ELTNAME = "struct";
+	private static const string FIELD_ELTNAME = "field";
 
 	private void generate_bindings(string api_path)
 			throws GeneratorError, GLib.FileError {
@@ -213,7 +215,8 @@ public class BindingGenerator : Object {
 
 			if (iter->name != INTERFACE_ELTNAME
 				&& iter->name != ENUMERATION_ELTNAME
-				&& iter->name != ERRORDOMAIN_ELTNAME)
+				&& iter->name != ERRORDOMAIN_ELTNAME
+				&& iter->name != STRUCT_ELTNAME)
 				continue;
 
 			string dbus_interface_name = iter->get_prop(NAME_ATTRNAME);
@@ -366,6 +369,9 @@ public class BindingGenerator : Object {
 				case ERRORDOMAIN_ELTNAME:
 					generate_errordomain(name, api);
 					break;
+				case STRUCT_ELTNAME:
+					generate_explicit_struct(name, api);
+					break;
 				}
 			}
 
@@ -390,19 +396,19 @@ public class BindingGenerator : Object {
 	private void generate_interface(string interface_name, Xml.Node* node)
 			throws GeneratorError {
 		string dbus_name = node->get_prop(NAME_ATTRNAME);
+		string namespace_name = get_namespace_name(interface_name);
 
 		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), dbus_name);
 		output.printf("%spublic interface %s : GLib.Object {\n", get_indent(), interface_name);
 		update_indent(+1);
 
-		generate_members(node, interface_name);
+		generate_members(node, interface_name, get_namespace_name(dbus_name));
 
 		update_indent(-1);
 		output.printf("%s}\n", get_indent());
 
 		if (structs_to_generate.size != 0) {
-			string namespace_name = get_namespace_name(interface_name);
 			foreach (string name in structs_to_generate.get_keys()) {
 				generate_struct(name, structs_to_generate.get(name), namespace_name);
 			}
@@ -468,7 +474,41 @@ public class BindingGenerator : Object {
 		output.printf("%s}\n", get_indent());
 	}
 
-	private void generate_struct(string name, string content_signature, string namespace_name)
+	private void generate_explicit_struct(string struct_name, Xml.Node* node)
+			throws GeneratorError {
+		string dbus_name = node->get_prop(NAME_ATTRNAME);
+
+		output.printf("\n");
+		output.printf("%spublic struct %s {\n", get_indent(), struct_name);
+		update_indent(+1);
+
+		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+			if (iter->type != ElementType.ELEMENT_NODE)
+				continue;
+
+			switch (iter->name) {
+			case FIELD_ELTNAME:
+				string field_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+				string field_type = "unknown";
+				try {
+					field_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+						iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
+						struct_name, get_namespace_name(dbus_name));
+				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+					stdout.printf("Error in struct %s field %s : Unknown dbus type %s\n",
+						struct_name, field_name, ex.message);
+				}
+
+				output.printf("%spublic %s %s;\n", get_indent(), field_type, field_name);
+				break;
+			}
+		}
+
+		update_indent(-1);
+		output.printf("%s}\n", get_indent());
+	}
+
+	private void generate_struct(string name, string content_signature, string dbus_namespace)
 			throws GeneratorError {
 		output.printf("\n");
 		output.printf("%spublic struct %s {\n", get_indent(), name);
@@ -478,7 +518,7 @@ public class BindingGenerator : Object {
 		string signature = content_signature;
 		string tail = null;
 		while (signature != "") {
-			string type = parse_type(signature, out tail, "");
+			string type = parse_type(signature, out tail, "", dbus_namespace);
 			output.printf("%spublic %s attr%d;\n", get_indent(), type, attribute_number);
 			attribute_number++;
 			signature = tail;
@@ -488,7 +528,7 @@ public class BindingGenerator : Object {
 		output.printf("%s}\n", get_indent());
 	}
 
-	private void generate_members(Xml.Node* node, string interface_name)
+	private void generate_members(Xml.Node* node, string interface_name, string dbus_namespace)
 			throws GeneratorError {
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
@@ -496,10 +536,10 @@ public class BindingGenerator : Object {
 
 			switch (iter->name) {
 			case METHOD_ELTNAME:
-				generate_method(iter, interface_name);
+				generate_method(iter, interface_name, dbus_namespace);
 				break;
 			case SIGNAL_ELTNAME:
-				generate_signal(iter, interface_name);
+				generate_signal(iter, interface_name, dbus_namespace);
 				break;
 			case ERROR_ELTNAME:
 				generate_error(iter, interface_name);
@@ -508,7 +548,7 @@ public class BindingGenerator : Object {
 		}
 	}
 
-	private void generate_method(Xml.Node* node, string interface_name)
+	private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace)
 			throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
@@ -539,7 +579,8 @@ public class BindingGenerator : Object {
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
 					iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
-					get_struct_name(interface_name, param_name));
+					get_struct_name(interface_name, param_name),
+					dbus_namespace);
 			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
 				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
 					interface_name, name, ex.message);
@@ -614,7 +655,7 @@ public class BindingGenerator : Object {
 			get_indent(), return_value_type, name, args_builder.str, throws_builder.str);
 	}
 
-	private void generate_signal(Xml.Node* node, string interface_name)
+	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
 			throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
@@ -632,7 +673,8 @@ public class BindingGenerator : Object {
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
 					iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
-					interface_name + capitalize(param_name));
+					interface_name + capitalize(param_name),
+					dbus_namespace);
 			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
 				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
 					interface_name, name, ex.message);
@@ -657,7 +699,7 @@ public class BindingGenerator : Object {
 			throws GeneratorError {
 	}
 
-	private string translate_type(string type, string? fso_type, string type_name)
+	private string translate_type(string type, string? fso_type, string type_name, string dbus_namespace)
 			throws GeneratorError {
 		if (fso_type != null) {
 			var vala_type = name_index.get(fso_type);
@@ -667,10 +709,10 @@ public class BindingGenerator : Object {
 			return vala_type;
 		}
 		string tail = null;
-		return parse_type(type, out tail, type_name).replace("][", ",");
+		return parse_type(type, out tail, type_name, dbus_namespace).replace("][", ",");
 	}
 
-	private string parse_type(string type, out string tail, string type_name)
+	private string parse_type(string type, out string tail, string type_name, string dbus_namespace)
 			throws GeneratorError {
 		tail = type.substring(1);
 		if (type.has_prefix("y")) {
@@ -700,10 +742,10 @@ public class BindingGenerator : Object {
 
 			StringBuilder vala_type = new StringBuilder();
 			vala_type.append("GLib.HashTable<");
-			vala_type.append(parse_type(tail, out tail2, plural_to_singular(type_name) + "Key"));
+			vala_type.append(parse_type(tail, out tail2, plural_to_singular(type_name) + "Key", dbus_namespace));
 			vala_type.append(", ");
 
-			string value_type = parse_type(tail2, out tail3, plural_to_singular(type_name));
+			string value_type = parse_type(tail2, out tail3, plural_to_singular(type_name), dbus_namespace);
 			if (value_type == "GLib.Value") {
 				value_type += "?"; 
 			}
@@ -714,7 +756,7 @@ public class BindingGenerator : Object {
 			return vala_type.str;
 		} else if (type.has_prefix("a")) {
 			string tail2 = null;
-			return parse_type(tail, out tail2, plural_to_singular(type_name)) + "[]";
+			return parse_type(tail, out tail2, plural_to_singular(type_name), dbus_namespace) + "[]";
 		} else if (type.has_prefix("(")) {
 			tail = tail.substring(0, tail.length - 1);
 
@@ -724,7 +766,9 @@ public class BindingGenerator : Object {
 				unique_type_name = "%s%d".printf(type_name, number++);
 			}
 
-			structs_to_generate.set(unique_type_name, tail);
+			if (!name_index.contains(dbus_namespace + "." + unique_type_name)) {
+				structs_to_generate.set(unique_type_name, tail);
+			}
 			return unique_type_name;
 		}
 		throw new GeneratorError.UNKNOWN_DBUS_TYPE(type);
