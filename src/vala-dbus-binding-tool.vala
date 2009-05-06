@@ -437,7 +437,7 @@ public class BindingGenerator : Object {
 				if (string_enum) {
 					output.printf("%s[DBus (value=\"%s\")]\n", get_indent(), member_value);
 				}
-				output.printf("%s%s%s%s\n", get_indent(), member_name, string_enum ? "" : " = member_value", iter->next == null ? "" : ",");
+				output.printf("%s%s%s%s\n", get_indent(), member_name, string_enum ? "" : " = %s".printf(member_value), iter->next == null ? "" : ",");
 				break;
 			}
 		}
