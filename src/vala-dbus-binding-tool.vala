@@ -42,6 +42,7 @@ public class BindingGenerator : Object {
 		registered_names.add("register");
 		registered_names.add("message");
 		registered_names.add("get_type");
+		registered_names.add("dispose");
 	}
 
 	public static int main(string[] args) {
@@ -509,7 +510,7 @@ public class BindingGenerator : Object {
 
 	private void generate_method(Xml.Node* node, string interface_name)
 			throws GeneratorError {
-		string name = uncapitalize(node->get_prop(NAME_ATTRNAME));
+		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
 		int out_param_count = 0;
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
@@ -615,7 +616,7 @@ public class BindingGenerator : Object {
 
 	private void generate_signal(Xml.Node* node, string interface_name)
 			throws GeneratorError {
-		string name = uncapitalize(node->get_prop(NAME_ATTRNAME));
+		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
 		bool first_param = true;
 		StringBuilder args_builder = new StringBuilder();
