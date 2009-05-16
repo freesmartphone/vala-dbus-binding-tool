@@ -157,6 +157,7 @@ public class BindingGenerator : Object {
 	private static const string VALUE_ATTRNAME = "value";
 	private static const string ERRORDOMAIN_ELTNAME = "errordomain";
 	private static const string ERROR_ELTNAME = "error";
+	private static const string NO_CONTAINER_ATTRNAME = "no-container";
 	private static const string THROWS_ELTNAME = "throws";
 	private static const string STRUCT_ELTNAME = "struct";
 	private static const string FIELD_ELTNAME = "field";
@@ -219,20 +220,31 @@ public class BindingGenerator : Object {
 				&& iter->name != STRUCT_ELTNAME)
 				continue;
 
+			string no_error_container_string = iter->get_ns_prop(NO_CONTAINER_ATTRNAME, FSO_NAMESPACE);
+			bool no_error_container = (no_error_container_string != null && no_error_container_string == "true");
+
 			string dbus_interface_name = iter->get_prop(NAME_ATTRNAME);
 			string[] split_name = dbus_interface_name.split(".");
-			string short_name = split_name[split_name.length - 1];
+			string short_name;
+			int last_part;
+			if (iter->name == ERRORDOMAIN_ELTNAME && no_error_container) {
+				short_name = "Error";
+				last_part = split_name.length;
+			} else {
+				short_name = split_name[split_name.length - 1];
+				last_part = split_name.length - 1;
+			}
 
 			// Removing stripped root namespaces
 			int i = 0;
-			for (; i < split_name.length - 1; i++) {
+			for (; i < last_part; i++) {
 				string part = split_name[i];
 				if (namespace_renaming.get(part) != "") break;
 			}
 
 			// Traversing inner namespaces
 			GeneratedNamespace ns = root_namespace;
-			for (; i < split_name.length - 1; i++) {
+			for (; i < last_part; i++) {
 				string part = split_name[i];
 
 				if (namespace_renaming.contains(part) && namespace_renaming.get(part) != "") {
@@ -275,7 +287,7 @@ public class BindingGenerator : Object {
 			if (inner_interface_strategy_concat) {
 				StringBuilder name_builder = new StringBuilder();
 				// Concatenating last inner namespaces
-				for (; i < split_name.length - 1; i++) {
+				for (; i < last_part; i++) {
 					name_builder.append(split_name[i]);
 				}
 				name_builder.append(short_name);
@@ -312,7 +324,11 @@ public class BindingGenerator : Object {
 			foreach (string name in ns.members.get_keys()) {
 				Xml.Node* api = ns.members.get(name);
 				string dbus_name = api->get_prop(NAME_ATTRNAME);
-				name_index.set(dbus_name, namespace_name + "." + name);
+				if (api->name == ERRORDOMAIN_ELTNAME) {
+					error_name_index.set(dbus_name, namespace_name + "." + name);
+				} else {
+					name_index.set(dbus_name, namespace_name + "." + name);
+				}
 			}
 		}
 
@@ -342,6 +358,7 @@ public class BindingGenerator : Object {
 	private GeneratedNamespace root_namespace = new GeneratedNamespace();
 
 	private Map<string, string> name_index = new HashMap<string, string>(str_hash, str_equal, str_equal);
+	private Map<string, string> error_name_index = new HashMap<string, string>(str_hash, str_equal, str_equal);
 
 	private void generate_namespace(GeneratedNamespace ns)
 			throws GeneratorError {
@@ -629,16 +646,15 @@ public class BindingGenerator : Object {
 				continue;
 
 			string errordomain_name = null;
-			try {
-				string fso_type = iter->get_prop(TYPE_ATTRNAME);
-				if (fso_type != null) {
-					errordomain_name = name_index.get(fso_type);
-				}
-			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-				stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
-					interface_name, name, ex.message);
+			string fso_type = iter->get_prop(TYPE_ATTRNAME);
+			if (fso_type != null) {
+				errordomain_name = error_name_index.get(fso_type);
 			}
-			
+			if (errordomain_name == null) {
+				stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
+					interface_name, name, fso_type);
+			}
+
 			if (!first_error) {
 				throws_builder.append(", ");
 			}
