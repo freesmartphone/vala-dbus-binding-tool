@@ -717,14 +717,14 @@ public class BindingGenerator : Object {
 
 	private string translate_type(string type, string? fso_type, string type_name, string dbus_namespace)
 			throws GeneratorError {
+		string tail = null;
 		if (fso_type != null) {
 			var vala_type = name_index.get(fso_type);
 			if (vala_type == null) {
 				throw new GeneratorError.UNKNOWN_DBUS_TYPE(fso_type);
 			}
-			return vala_type;
+			return vala_type + (type.has_prefix("a") ? "[]" : "");
 		}
-		string tail = null;
 		return parse_type(type, out tail, type_name, dbus_namespace).replace("][", ",");
 	}
 
