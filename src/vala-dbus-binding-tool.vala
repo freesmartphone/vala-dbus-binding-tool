@@ -607,19 +607,9 @@ public class BindingGenerator : Object {
 				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
 					interface_name, name, ex.message);
 			}
-			string param_dir = iter->get_prop(DIRECTION_ATTRNAME);
+			string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
 
 			switch (param_dir) {
-			case IN_ATTRVALUE:
-				if (!first_param) {
-					args_builder.append(", ");
-				}
-
-				args_builder.append(param_type);
-				args_builder.append(" ");
-				args_builder.append(param_name);
-				first_param = false;
-				break;
 			case OUT_ATTRVALUE:
 				if (param_type == null) {
 					param_type = "void";
@@ -637,6 +627,17 @@ public class BindingGenerator : Object {
 				} else {
 					return_value_type = param_type;
 				}
+				break;
+			case IN_ATTRVALUE:
+                        default:
+				if (!first_param) {
+					args_builder.append(", ");
+				}
+
+				args_builder.append(param_type);
+				args_builder.append(" ");
+				args_builder.append(param_name);
+				first_param = false;
 				break;
 			}
 		}
@@ -679,6 +680,7 @@ public class BindingGenerator : Object {
 	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
 			throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
+		int unknown_param_count = 0;
 
 		bool first_param = true;
 		StringBuilder args_builder = new StringBuilder();
@@ -690,6 +692,10 @@ public class BindingGenerator : Object {
 				continue;
 
 			string param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+			if(param_name == null || param_name == "") {
+				param_name = "param%i".printf(unknown_param_count);
+				unknown_param_count++;
+			}
 			string param_type = "unknown";
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
