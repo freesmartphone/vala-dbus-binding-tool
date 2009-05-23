@@ -568,6 +568,7 @@ public class BindingGenerator : Object {
 	private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace)
 			throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
+		int unknown_param_count = 0;
 
 		int out_param_count = 0;
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
@@ -591,7 +592,11 @@ public class BindingGenerator : Object {
 			if (iter->name != ARG_ELTNAME)
 				continue;
 
-			string param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+			string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+			if(param_name == null || param_name == "") {
+				param_name = "param%i".printf(unknown_param_count);
+				unknown_param_count++;
+			}
 			string param_type = "unknown";
 			try {
 				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
@@ -847,8 +852,8 @@ public class BindingGenerator : Object {
 		return uncapitalize(name).up();
 	}
 
-	private string transform_registered_name(string name) {
-		if (registered_names.contains(name)) {
+	private string transform_registered_name(string? name) {
+		if (name != null && registered_names.contains(name)) {
 			return name + "_";
 		}
 		return name;
