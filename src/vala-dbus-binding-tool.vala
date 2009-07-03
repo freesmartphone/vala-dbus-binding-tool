@@ -583,90 +583,86 @@ public class BindingGenerator : Object {
 		}
 
 		bool first_param = true;
+		bool first_error = true;
 		StringBuilder args_builder = new StringBuilder();
+		StringBuilder throws_builder = new StringBuilder();
 		string return_value_type = "void";
+
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
 				continue;
 
-			if (iter->name != ARG_ELTNAME)
-				continue;
-
-			string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
-			if(param_name == null || param_name == "") {
-				param_name = "param%i".printf(unknown_param_count);
-				unknown_param_count++;
-			}
-			string param_type = "unknown";
-			try {
-				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
-					iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
-					get_struct_name(interface_name, param_name),
-					dbus_namespace);
-			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
-					interface_name, name, ex.message);
-			}
-			string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
-
-			switch (param_dir) {
-			case OUT_ATTRVALUE:
-				if (param_type == null) {
-					param_type = "void";
+			switch (iter->name) {
+			case ARG_ELTNAME:
+				string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+				if(param_name == null || param_name == "") {
+					param_name = "param%i".printf(unknown_param_count);
+					unknown_param_count++;
 				}
-				if (out_param_count != 1) {
+				string param_type = "unknown";
+				try {
+					param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+						iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
+						get_struct_name(interface_name, param_name),
+						dbus_namespace);
+				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+					stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
+						interface_name, name, ex.message);
+				}
+				string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
+
+				switch (param_dir) {
+				case OUT_ATTRVALUE:
+					if (param_type == null) {
+						param_type = "void";
+					}
+					if (out_param_count != 1) {
+						if (!first_param) {
+							args_builder.append(", ");
+						}
+
+						args_builder.append("out ");
+						args_builder.append(param_type);
+						args_builder.append(" ");
+						args_builder.append(param_name);
+						first_param = false;
+					} else {
+						return_value_type = param_type;
+					}
+					break;
+				case IN_ATTRVALUE:
+				default:
 					if (!first_param) {
 						args_builder.append(", ");
 					}
 
-					args_builder.append("out ");
 					args_builder.append(param_type);
 					args_builder.append(" ");
 					args_builder.append(param_name);
 					first_param = false;
-				} else {
-					return_value_type = param_type;
+					break;
 				}
 				break;
-			case IN_ATTRVALUE:
-                        default:
-				if (!first_param) {
-					args_builder.append(", ");
+			case THROWS_ELTNAME:
+				string errordomain_name = null;
+				string fso_type = iter->get_prop(TYPE_ATTRNAME);
+				if (fso_type != null) {
+					errordomain_name = error_name_index.get(fso_type);
+				}
+				if (errordomain_name == null) {
+					stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
+						interface_name, name, fso_type);
 				}
 
-				args_builder.append(param_type);
-				args_builder.append(" ");
-				args_builder.append(param_name);
-				first_param = false;
+				if (!first_error) {
+					throws_builder.append(", ");
+				}
+				throws_builder.append(errordomain_name);
+				first_error = false;
 				break;
 			}
 		}
 
-		bool first_error = true;
-		StringBuilder throws_builder = new StringBuilder();
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
-
-			if (iter->name != THROWS_ELTNAME)
-				continue;
-
-			string errordomain_name = null;
-			string fso_type = iter->get_prop(TYPE_ATTRNAME);
-			if (fso_type != null) {
-				errordomain_name = error_name_index.get(fso_type);
-			}
-			if (errordomain_name == null) {
-				stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
-					interface_name, name, fso_type);
-			}
-
-			if (!first_error) {
-				throws_builder.append(", ");
-			}
-			throws_builder.append(errordomain_name);
-			first_error = false;
-		}
 		if (!first_error) {
 			throws_builder.append(", ");
 		}
