@@ -161,6 +161,7 @@ public class BindingGenerator : Object {
 	private static const string THROWS_ELTNAME = "throws";
 	private static const string STRUCT_ELTNAME = "struct";
 	private static const string FIELD_ELTNAME = "field";
+	private static const string ANNOTATION_ELTNAME = "annotation";
 
 	private void generate_bindings(string api_path)
 			throws GeneratorError, GLib.FileError {
@@ -587,6 +588,7 @@ public class BindingGenerator : Object {
 		StringBuilder args_builder = new StringBuilder();
 		StringBuilder throws_builder = new StringBuilder();
 		string return_value_type = "void";
+		bool async_method = false;
 
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
@@ -660,6 +662,12 @@ public class BindingGenerator : Object {
 				throws_builder.append(errordomain_name);
 				first_error = false;
 				break;
+			case ANNOTATION_ELTNAME:
+				string annotation_name = iter->get_prop(NAME_ATTRNAME);
+				if (annotation_name == "org.freedesktop.DBus.GLib.Async") {
+					async_method = true;
+				}
+				break;
 			}
 		}
 
@@ -669,8 +677,8 @@ public class BindingGenerator : Object {
 		throws_builder.append("DBus.Error");
 
 		output.printf("\n");
-		output.printf("%spublic abstract %s %s(%s) throws %s;\n",
-			get_indent(), return_value_type, name, args_builder.str, throws_builder.str);
+		output.printf("%spublic abstract %s %s(%s) %sthrows %s;\n",
+			get_indent(), return_value_type, name, args_builder.str, (async_method ? "yields " : ""), throws_builder.str);
 	}
 
 	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
