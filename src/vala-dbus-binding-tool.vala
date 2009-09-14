@@ -678,7 +678,7 @@ public class BindingGenerator : Object {
 
 		output.printf("\n");
 		output.printf("%spublic abstract %s %s %s(%s) throws %s;\n",
-			get_indent(), return_value_type, (async_method ? "async" : ""), name, args_builder.str, throws_builder.str);
+			get_indent(), (async_method ? "async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
 	}
 
 	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
