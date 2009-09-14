@@ -677,8 +677,8 @@ public class BindingGenerator : Object {
 		throws_builder.append("DBus.Error");
 
 		output.printf("\n");
-		output.printf("%spublic abstract %s %s(%s) %sthrows %s;\n",
-			get_indent(), return_value_type, name, args_builder.str, (async_method ? "yields " : ""), throws_builder.str);
+		output.printf("%spublic abstract %s %s %s(%s) throws %s;\n",
+			get_indent(), return_value_type, (async_method ? "async" : ""), name, args_builder.str, throws_builder.str);
 	}
 
 	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
