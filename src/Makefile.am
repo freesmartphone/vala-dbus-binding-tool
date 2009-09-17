@@ -22,8 +22,7 @@ vala_dbus_binding_tool_VALASOURCES = \
 	vala-dbus-binding-tool.vala
 
 vala_dbus_binding_tool_SOURCES = \
-	$(vala_dbus_binding_tool_VALASOURCES:.vala=.c) \
-	$(vala_dbus_binding_tool_VALASOURCES:.vala=.h)
+	$(vala_dbus_binding_tool_VALASOURCES:.vala=.c)
 
 vala_dbus_binding_tool.vala.stamp: $(vala_dbus_binding_tool_VALASOURCES)
 	$(VALAC) -C ${VALACFLAGS} --basedir . $^
@@ -41,4 +40,3 @@ CLEANFILES = \
 	*.c \
 	*.h \
 	vala_dbus_binding_tool.vala.stamp
-
