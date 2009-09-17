@@ -37,6 +37,7 @@ AC_SUBST(XML_LIBS)
 
 AC_CONFIG_FILES([
 	Makefile
+	vala-dbus-binding-tool-1.0.pc
 	src/Makefile
 	po/Makefile.in
 ])

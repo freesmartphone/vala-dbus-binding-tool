@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+
+Name: Vala-DBus-Binding-Tool
+Description: The Vala DBus Binding Tool
+Version: @VERSION@
+Requires:
+Libs:
+Cflags:
