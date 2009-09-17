@@ -1,4 +1,4 @@
-AC_INIT([vala-dbus-binding-tool], [0.1.0], [ptitjes@free.fr], [vala-dbus-binding-tool])
+AC_INIT([vala-dbus-binding-tool], [0.1.1], [ptitjes@free.fr], [vala-dbus-binding-tool])
 AC_CONFIG_SRCDIR([src/Makefile.am])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE([dist-bzip2])
@@ -23,7 +23,11 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
-PKG_CHECK_MODULES(VALA, vala-1.0)
+VALA_REQUIRED=0.7.6
+
+# vala
+PKG_CHECK_MODULES(VALA,
+  vala-1.0 >= $VALA_REQUIRED)
 AC_SUBST(VALA_CFLAGS)
 AC_SUBST(VALA_LIBS)
 
