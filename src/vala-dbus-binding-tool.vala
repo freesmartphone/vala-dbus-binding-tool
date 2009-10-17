@@ -255,7 +255,7 @@ public class BindingGenerator : Object {
 				if (ns.members.contains(part) && inner_interface_strategy_concat) {
 					if (ns.namespaces.contains(part)) {
 						GeneratedNamespace child = ns.namespaces.get(part);
-						foreach (string interf_name in child.members.get_keys()) {
+						foreach (string interf_name in child.members.keys) {
 							Xml.Node* interf = child.members.get(interf_name);
 							ns.members.set(part + interf_name, interf);
 						}
@@ -296,7 +296,7 @@ public class BindingGenerator : Object {
 
 				if (ns.namespaces.contains(short_name)) {
 					GeneratedNamespace child = ns.namespaces.get(short_name);
-					foreach (string interf_name in child.members.get_keys()) {
+					foreach (string interf_name in child.members.keys) {
 						Xml.Node* interf = child.members.get(interf_name);
 						ns.members.set(short_name + interf_name, interf);
 					}
@@ -322,7 +322,7 @@ public class BindingGenerator : Object {
 		if (ns.members.size > 0) {
 			string namespace_name = string.joinv(".", get_namespace_path(ns));
 
-			foreach (string name in ns.members.get_keys()) {
+			foreach (string name in ns.members.keys) {
 				Xml.Node* api = ns.members.get(name);
 				string dbus_name = api->get_prop(NAME_ATTRNAME);
 				if (api->name == ERRORDOMAIN_ELTNAME) {
@@ -333,7 +333,7 @@ public class BindingGenerator : Object {
 			}
 		}
 
-		foreach (string name in ns.namespaces.get_keys()) {
+		foreach (string name in ns.namespaces.keys) {
 			GeneratedNamespace child = ns.namespaces.get(name);
 
 			index_names(child);
@@ -374,7 +374,7 @@ public class BindingGenerator : Object {
 				update_indent(+1);
 			}
 
-			foreach (string name in ns.members.get_keys()) {
+			foreach (string name in ns.members.keys) {
 				Xml.Node* api = ns.members.get(name);
 
 				switch (api->name) {
@@ -401,7 +401,7 @@ public class BindingGenerator : Object {
 			output = null;
 		}
 
-		foreach (string name in ns.namespaces.get_keys()) {
+		foreach (string name in ns.namespaces.keys) {
 			GeneratedNamespace child = ns.namespaces.get(name);
 
 			generate_namespace(child);
@@ -427,7 +427,7 @@ public class BindingGenerator : Object {
 		output.printf("%s}\n", get_indent());
 
 		if (structs_to_generate.size != 0) {
-			foreach (string name in structs_to_generate.get_keys()) {
+			foreach (string name in structs_to_generate.keys) {
 				generate_struct(name, structs_to_generate.get(name), namespace_name);
 			}
 			structs_to_generate.clear();
