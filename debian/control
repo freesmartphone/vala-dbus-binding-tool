@@ -1,0 +1,31 @@
+Source: vala-dbus-binding-tool
+Section: devel
+Priority: optional
+Maintainer: Frederik Sdun <frederik.sdun@googlemail.com>
+Build-Depends: debhelper (>= 5.0),
+               cdbs (>= 0.4),
+               libglib2.0-dev (>= 2.18.0),
+               autotools-dev,
+               valac (>=0.7.6),
+               libgee-dev (>=0.5.0),
+               libxml2-dev
+Vcs-Git: git://git.freesmartphone.org/vala-dbus-binding-tool.git
+Vcs-Browser: http://git.freesmartphone.org/?p=vala-dbus-binding-tool.git
+Homepage: http://freesmartphone.org
+
+Package: vala-dbus-binding-tool
+Architecture: any
+Depends: ${shlibs:Depends},
+        libglib2 (>=2.18.0),
+        libgee (>=0.5.0),
+        libxml2
+Description: Converts dbus xml files to Vala interfaces.
+
+Package: vala-dbus-binding-tool-dbg
+Priority: extra
+Architecture: any
+Section: libdevel
+Depends: vala-dbus-binding-tool,
+        ${misc:Depends}
+Description: Converts dbus xml files to Vala interfaces.
+
