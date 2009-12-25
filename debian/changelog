@@ -1,6 +1,6 @@
-vala-dbus-binding-tool (0.7.9-2) karmic; urgency=low
+vala-dbus-binding-tool (0.1.2-1) karmic; urgency=low
 
   * New upstream version
 
- -- Frederik Sdun (playy) <frederik.sdun@googlemail.com>  Fri, 13 Nov 2009 21:33:39 +0100
+ -- Frederik Sdun (playya) <frederik.sdun@googlemail.com>  Fri, 13 Nov 2009 21:33:39 +0100
 
