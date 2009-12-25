@@ -1,3 +1,10 @@
+/**
+ * vala-dbus-binding-tool.vala
+ *
+ * Authored by Didier "Ptitjes" <ptitjes@free.fr>
+ *
+ * GPLv3
+ **/
 using GLib;
 using Xml;
 using Gee;
@@ -106,7 +113,7 @@ public class BindingGenerator : Object {
 	}
 
 	private static void show_version() {
-		stdout.printf("Vala D-Bus Binding Tool 0.1\n");
+		stdout.printf(@"Vala D-Bus Binding Tool $(Config.PACKAGE_VERSION)\n");
 		stdout.printf("Copyright (C) 2009 SHR <shr-project.org>\n");
 		stdout.printf("This is free software; see the source for copying conditions.\n");
 		stdout.printf("There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
