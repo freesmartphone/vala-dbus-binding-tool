@@ -1,3 +1,10 @@
+/**
+ * vala-dbus-binding-tool.vala
+ *
+ * Authored by Didier "Ptitjes" <ptitjes@free.fr>
+ *
+ * GPLv3
+ **/
 using GLib;
 using Xml;
 using Gee;
