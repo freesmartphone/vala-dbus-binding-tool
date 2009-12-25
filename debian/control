@@ -16,7 +16,7 @@ Homepage: http://freesmartphone.org
 Package: vala-dbus-binding-tool
 Architecture: any
 Depends: ${shlibs:Depends},
-        libglib2 (>=2.18.0),
+        libglib2.0-0 (>=2.18.0),
         libgee (>=0.5.0),
         libxml2
 Description: Converts dbus xml files to Vala interfaces.
