@@ -148,7 +148,7 @@ public class BindingGenerator : Object {
 	private Map<string,string> namespace_renaming;
 	private string command;
 	private bool inner_interface_strategy_concat = true;
-	
+
 	private static const string FSO_NAMESPACE = "http://www.freesmartphone.org/schemas/DBusSpecExtension";
 
 	private static const string INTERFACE_ELTNAME = "interface";
@@ -540,6 +540,9 @@ public class BindingGenerator : Object {
 		output.printf("%spublic struct %s {\n", get_indent(), struct_name);
 		update_indent(+1);
 
+		string ctor_signature = "%spublic %s (".printf(get_indent(), struct_name);
+		string ctor_body = "";
+
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
 				continue;
@@ -558,12 +561,15 @@ public class BindingGenerator : Object {
 				}
 
 				output.printf("%spublic %s %s;\n", get_indent(), field_type, field_name);
+				ctor_signature += "%s %s, ".printf(field_type, field_name);
+				ctor_body += "%sthis.%s = %s;\n".printf(get_indent(+1), field_name, field_name);
 				break;
 			}
 		}
+		string constructor = "%s ) {\n%s%s}".printf( ctor_signature.substring( 0, ctor_signature.length-2 ), ctor_body, get_indent() );
 
 		update_indent(-1);
-		output.printf("%s}\n", get_indent());
+		output.printf("\n%s\n%s}\n", constructor, get_indent());
 	}
 
 	private void generate_struct(string name, string content_signature, string dbus_namespace)
@@ -956,7 +962,7 @@ public class BindingGenerator : Object {
 
 			string value_type = parse_type(tail2, out tail3, plural_to_singular(type_name), dbus_namespace);
 			if (value_type == "GLib.Value") {
-				value_type += "?"; 
+				value_type += "?";
 			}
 			vala_type.append(value_type);
 			vala_type.append(">");
@@ -1062,17 +1068,12 @@ public class BindingGenerator : Object {
 	}
 
 	private int indentSize = 0;
-	private string indent = "";
 
-	private unowned string get_indent() {
-		if (indent == null) {
-			indent = string.nfill(indentSize, '\t');
-		}
-		return indent;
+	private string get_indent(int offset = 0) {
+		return string.nfill(indentSize + offset, '\t');
 	}
 
 	private void update_indent(int increment) {
 		indentSize += increment;
-		indent = null;
 	}
 }
