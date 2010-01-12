@@ -566,7 +566,7 @@ public class BindingGenerator : Object {
 				break;
 			}
 		}
-		string constructor = "%s ) {\n%s%s}".printf( ctor_signature.substring( 0, ctor_signature.length-2 ), ctor_body, get_indent() );
+		string constructor = "%s ) {\n%s%s}".printf( ctor_signature.substring( 0, ctor_signature.length-3 ), ctor_body, get_indent() );
 
 		update_indent(-1);
 		output.printf("\n%s\n%s}\n", constructor, get_indent());
