@@ -181,7 +181,7 @@ public class BindingGenerator : Object {
 			string name;
 			while ((name = dir.read_name()) != null) {
 				if (name.has_suffix(".xml")) {
-					add_api_file(api_path + name);
+					add_api_file(Path.build_filename(api_path, name));
 				}
 			}
 		}
@@ -446,7 +446,6 @@ public class BindingGenerator : Object {
     private void generate_proxy_class( string interface_name, Xml.Node* node)
             throws GeneratorError {
 		string dbus_name = node->get_prop(NAME_ATTRNAME);
-		string namespace_name = get_namespace_name(interface_name);
         string proxy_name = get_proxy_from_interface(interface_name);
 
         output.printf("\n");
@@ -561,432 +560,431 @@ public class BindingGenerator : Object {
 				}
 
 				output.printf("%spublic %s %s;\n", get_indent(), field_type, field_name);
-				ctor_signature += "%s %s, ".printf(field_type, field_name);
-				ctor_body += "%sthis.%s = %s;\n".printf(get_indent(+1), field_name, field_name);
-				break;
-			}
-		}
-		string constructor = "%s ) {\n%s%s}".printf( ctor_signature.substring( 0, ctor_signature.length-3 ), ctor_body, get_indent() );
+                    ctor_signature += "%s %s, ".printf(field_type, field_name);
+                    ctor_body += "%sthis.%s = %s;\n".printf(get_indent(+1), field_name, field_name);
+                    break;
+                }
+            }
+            string constructor = "%s ) {\n%s%s}".printf( ctor_signature.substring( 0, ctor_signature.length-2 ), ctor_body, get_indent() );
 
-		update_indent(-1);
-		output.printf("\n%s\n%s}\n", constructor, get_indent());
-	}
+            update_indent(-1);
+            output.printf("\n%s\n%s}\n", constructor, get_indent());
+        }
 
-	private void generate_struct(string name, string content_signature, string dbus_namespace)
-			throws GeneratorError {
-		output.printf("\n");
-		output.printf("%spublic struct %s {\n", get_indent(), name);
-		update_indent(+1);
+        private void generate_struct(string name, string content_signature, string dbus_namespace)
+                throws GeneratorError {
+            output.printf("\n");
+            output.printf("%spublic struct %s {\n", get_indent(), name);
+            update_indent(+1);
 
-		int attribute_number = 1;
-		string signature = content_signature;
-		string tail = null;
-		while (signature != "") {
-			string type = parse_type(signature, out tail, "", dbus_namespace);
-			output.printf("%spublic %s attr%d;\n", get_indent(), type, attribute_number);
-			attribute_number++;
-			signature = tail;
-		}
+            int attribute_number = 1;
+            string signature = content_signature;
+            string tail = null;
+            while (signature != "") {
+                string type = parse_type(signature, out tail, "", dbus_namespace);
+                output.printf("%spublic %s attr%d;\n", get_indent(), type, attribute_number);
+                attribute_number++;
+                signature = tail;
+            }
 
-		update_indent(-1);
-		output.printf("%s}\n", get_indent());
-	}
+            update_indent(-1);
+            output.printf("%s}\n", get_indent());
+        }
 
-	private void generate_members(Xml.Node* node, string interface_name, string dbus_namespace)
-			throws GeneratorError {
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
+        private void generate_members(Xml.Node* node, string interface_name, string dbus_namespace)
+                throws GeneratorError {
+            for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+                if (iter->type != ElementType.ELEMENT_NODE)
+                    continue;
 
-			switch (iter->name) {
-			case METHOD_ELTNAME:
-				generate_method(iter, interface_name, dbus_namespace);
-				break;
-			case SIGNAL_ELTNAME:
-				generate_signal(iter, interface_name, dbus_namespace);
-				break;
-			case ERROR_ELTNAME:
-				generate_error(iter, interface_name);
-				break;
-			}
-		}
-	}
+                switch (iter->name) {
+                case METHOD_ELTNAME:
+                    generate_method(iter, interface_name, dbus_namespace);
+                    break;
+                case SIGNAL_ELTNAME:
+                    generate_signal(iter, interface_name, dbus_namespace);
+                    break;
+                case ERROR_ELTNAME:
+                    generate_error(iter, interface_name);
+                    break;
+                }
+            }
+        }
 
-	private void generate_proxy_members(Xml.Node* node, string interface_name, string dbus_namespace)
-			throws GeneratorError {
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
+        private void generate_proxy_members(Xml.Node* node, string interface_name, string dbus_namespace)
+                throws GeneratorError {
+            for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+                if (iter->type != ElementType.ELEMENT_NODE)
+                    continue;
 
-			switch (iter->name) {
-			case METHOD_ELTNAME:
-				generate_proxy_method(iter, interface_name, dbus_namespace);
-				break;
-			}
-		}
-	}
+                switch (iter->name) {
+                case METHOD_ELTNAME:
+                    generate_proxy_method(iter, interface_name, dbus_namespace);
+                    break;
+                }
+            }
+        }
 
-	private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace)
-			throws GeneratorError {
-		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
-		int unknown_param_count = 0;
+        private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace)
+                throws GeneratorError {
+            string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
+            int unknown_param_count = 0;
 
-		int out_param_count = get_out_parameter_count(node);
+            int out_param_count = get_out_parameter_count(node);
 
-		bool first_param = true;
-		bool first_error = true;
-		StringBuilder args_builder = new StringBuilder();
-		StringBuilder throws_builder = new StringBuilder();
-		string return_value_type = "void";
-		bool async_method = false;
+            bool first_param = true;
+            bool first_error = true;
+            StringBuilder args_builder = new StringBuilder();
+            StringBuilder throws_builder = new StringBuilder();
+            string return_value_type = "void";
+            bool async_method = false;
 
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
+            for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+                if (iter->type != ElementType.ELEMENT_NODE)
+                    continue;
 
-			switch (iter->name) {
-			case ARG_ELTNAME:
-				string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
-				if(param_name == null || param_name == "") {
-					param_name = "param%i".printf(unknown_param_count);
-					unknown_param_count++;
-				}
-				string param_type = "unknown";
-				try {
-					param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
-						iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
-						get_struct_name(interface_name, param_name),
-						dbus_namespace);
-				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-					stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
-						interface_name, name, ex.message);
-				}
-				string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
+                switch (iter->name) {
+                case ARG_ELTNAME:
+                    string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+                    if(param_name == null || param_name == "") {
+                        param_name = "param%i".printf(unknown_param_count);
+                        unknown_param_count++;
+                    }
+                    string param_type = "unknown";
+                    try {
+                        param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+                            iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
+                            get_struct_name(interface_name, param_name),
+                            dbus_namespace);
+                    } catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+                        stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
+                            interface_name, name, ex.message);
+                    }
+                    string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
 
-				switch (param_dir) {
-				case OUT_ATTRVALUE:
-					if (param_type == null) {
-						param_type = "void";
-					}
-					if (out_param_count != 1) {
-						if (!first_param) {
-							args_builder.append(", ");
-						}
+                    switch (param_dir) {
+                    case OUT_ATTRVALUE:
+                        if (param_type == null) {
+                            param_type = "void";
+                        }
+                        if (out_param_count != 1) {
+                            if (!first_param) {
+                                args_builder.append(", ");
+                            }
 
-						args_builder.append("out ");
-						args_builder.append(param_type);
-						args_builder.append(" ");
-						args_builder.append(param_name);
-						first_param = false;
-					} else {
-						return_value_type = param_type;
-					}
-					break;
-				case IN_ATTRVALUE:
-				default:
-					if (!first_param) {
-						args_builder.append(", ");
-					}
+                            args_builder.append("out ");
+                            args_builder.append(param_type);
+                            args_builder.append(" ");
+                            args_builder.append(param_name);
+                            first_param = false;
+                        } else {
+                            return_value_type = param_type;
+                        }
+                        break;
+                    case IN_ATTRVALUE:
+                    default:
+                        if (!first_param) {
+                            args_builder.append(", ");
+                        }
 
-					args_builder.append(param_type);
-					args_builder.append(" ");
-					args_builder.append(param_name);
-					first_param = false;
-					break;
-				}
-				break;
-			case THROWS_ELTNAME:
-				string errordomain_name = null;
-				string fso_type = iter->get_prop(TYPE_ATTRNAME);
-				if (fso_type != null) {
-					errordomain_name = error_name_index.get(fso_type);
-				}
-				if (errordomain_name == null) {
-					stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
-						interface_name, name, fso_type);
-				}
+                        args_builder.append(param_type);
+                        args_builder.append(" ");
+                        args_builder.append(param_name);
+                        first_param = false;
+                        break;
+                    }
+                    break;
+                case THROWS_ELTNAME:
+                    string errordomain_name = null;
+                    string fso_type = iter->get_prop(TYPE_ATTRNAME);
+                    if (fso_type != null) {
+                        errordomain_name = error_name_index.get(fso_type);
+                    }
+                    if (errordomain_name == null) {
+                        stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
+                            interface_name, name, fso_type);
+                    }
 
-				if (!first_error) {
-					throws_builder.append(", ");
-				}
-				throws_builder.append(errordomain_name);
-				first_error = false;
-				break;
-			case ANNOTATION_ELTNAME:
-				string annotation_name = iter->get_prop(NAME_ATTRNAME);
-				if (annotation_name == "org.freedesktop.DBus.GLib.Async") {
-					async_method = true;
-				}
-				break;
-			}
-		}
+                    if (!first_error) {
+                        throws_builder.append(", ");
+                    }
+                    throws_builder.append(errordomain_name);
+                    first_error = false;
+                    break;
+                case ANNOTATION_ELTNAME:
+                    string annotation_name = iter->get_prop(NAME_ATTRNAME);
+                    if (annotation_name == "org.freedesktop.DBus.GLib.Async") {
+                        async_method = true;
+                    }
+                    break;
+                }
+            }
 
-		if (!first_error) {
-			throws_builder.append(", ");
-		}
-		throws_builder.append("DBus.Error");
+            if (!first_error) {
+                throws_builder.append(", ");
+            }
+            throws_builder.append("DBus.Error");
 
-		output.printf("\n");
-		output.printf("%spublic abstract %s %s %s(%s) throws %s;\n",
-			get_indent(), (async_method ? "async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
-	}
-    
-    private int get_out_parameter_count(Xml.Node* node) {
-		int out_param_count = 0;
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
-			if (iter->name != ARG_ELTNAME)
-				continue;
-			if (iter->get_prop(DIRECTION_ATTRNAME) != OUT_ATTRVALUE)
-				continue;
+            output.printf("\n");
+            output.printf("%spublic abstract %s %s %s(%s) throws %s;\n",
+                get_indent(), (async_method ? "async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
+        }
+        
+        private int get_out_parameter_count(Xml.Node* node) {
+            int out_param_count = 0;
+            for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+                if (iter->type != ElementType.ELEMENT_NODE)
+                    continue;
+                if (iter->name != ARG_ELTNAME)
+                    continue;
+                if (iter->get_prop(DIRECTION_ATTRNAME) != OUT_ATTRVALUE)
+                    continue;
 
-			out_param_count++;
-		}
-        return out_param_count;
-    }
+                out_param_count++;
+            }
+            return out_param_count;
+        }
 
 
-	private void generate_proxy_method(Xml.Node* node, string interface_name, string dbus_namespace)
-			throws GeneratorError {
-		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
-		int unknown_param_count = 0;
+        private void generate_proxy_method(Xml.Node* node, string interface_name, string dbus_namespace)
+                throws GeneratorError {
+            string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
+            int unknown_param_count = 0;
 
-		int out_param_count = get_out_parameter_count(node);
+            int out_param_count = get_out_parameter_count(node);
 
-		bool first_param = true;
-		bool first_error = true;
-		StringBuilder args_builder = new StringBuilder();
-		StringBuilder throws_builder = new StringBuilder();
-        StringBuilder call_args_builder = new StringBuilder();
-		string return_value_type = "void";
-		bool async_method = false;
+            bool first_param = true;
+            bool first_error = true;
+            StringBuilder args_builder = new StringBuilder();
+            StringBuilder throws_builder = new StringBuilder();
+            StringBuilder call_args_builder = new StringBuilder();
+            string return_value_type = "void";
+            bool async_method = false;
 
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
+            for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+                if (iter->type != ElementType.ELEMENT_NODE)
+                    continue;
 
-			switch (iter->name) {
-			case ARG_ELTNAME:
-				string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
-				if(param_name == null || param_name == "") {
-					param_name = "param%i".printf(unknown_param_count);
-					unknown_param_count++;
-				}
-				string param_type = "unknown";
-				try {
-					param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
-						iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
-						get_struct_name(interface_name, param_name),
-						dbus_namespace);
-				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-					stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
-						interface_name, name, ex.message);
-				}
-				string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
+                switch (iter->name) {
+                case ARG_ELTNAME:
+                    string? param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+                    if(param_name == null || param_name == "") {
+                        param_name = "param%i".printf(unknown_param_count);
+                        unknown_param_count++;
+                    }
+                    string param_type = "unknown";
+                    try {
+                        param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+                            iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
+                            get_struct_name(interface_name, param_name),
+                            dbus_namespace);
+                    } catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+                        stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
+                            interface_name, name, ex.message);
+                    }
+                    string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
 
-				switch (param_dir) {
-				case OUT_ATTRVALUE:
-					if (param_type == null) {
-						param_type = "void";
-					}
-					if (out_param_count != 1) {
-						if (!first_param) {
-							args_builder.append(", ");
+                    switch (param_dir) {
+                    case OUT_ATTRVALUE:
+                        if (param_type == null) {
+                            param_type = "void";
+                        }
+                        if (out_param_count != 1) {
+                            if (!first_param) {
+                                args_builder.append(", ");
+                                call_args_builder.append(", ");
+                            }
+
+                            args_builder.append("out ");
+                            args_builder.append(param_type);
+                            args_builder.append(" ");
+                            args_builder.append(param_name);
+
+                            call_args_builder.append("out ");
+                            call_args_builder.append(param_name);
+                            first_param = false;
+                        } else {
+                            return_value_type = param_type;
+                        }
+                        break;
+                    case IN_ATTRVALUE:
+                    default:
+                        if (!first_param) {
+                            args_builder.append(", ");
                             call_args_builder.append(", ");
-						}
+                        }
 
-						args_builder.append("out ");
-						args_builder.append(param_type);
-						args_builder.append(" ");
-						args_builder.append(param_name);
+                        args_builder.append(param_type);
+                        args_builder.append(" ");
+                        args_builder.append(param_name);
 
-                        call_args_builder.append("out ");
                         call_args_builder.append(param_name);
-						first_param = false;
-					} else {
-						return_value_type = param_type;
-					}
-					break;
-				case IN_ATTRVALUE:
-				default:
-					if (!first_param) {
-						args_builder.append(", ");
-                        call_args_builder.append(", ");
-					}
+                        first_param = false;
+                        break;
+                    }
+                    break;
+                case THROWS_ELTNAME:
+                    string errordomain_name = null;
+                    string fso_type = iter->get_prop(TYPE_ATTRNAME);
+                    if (fso_type != null) {
+                        errordomain_name = error_name_index.get(fso_type);
+                    }
+                    if (errordomain_name == null) {
+                        stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
+                            interface_name, name, fso_type);
+                    }
 
-					args_builder.append(param_type);
-					args_builder.append(" ");
-					args_builder.append(param_name);
+                    if (!first_error) {
+                        throws_builder.append(", ");
+                    }
+                    throws_builder.append(errordomain_name);
+                    first_error = false;
+                    break;
+                case ANNOTATION_ELTNAME:
+                    string annotation_name = iter->get_prop(NAME_ATTRNAME);
+                    if (annotation_name == "org.freedesktop.DBus.GLib.Async") {
+                        async_method = true;
+                    }
+                    break;
+                }
+            }
 
-                    call_args_builder.append(param_name);
-					first_param = false;
-					break;
-				}
-				break;
-			case THROWS_ELTNAME:
-				string errordomain_name = null;
-				string fso_type = iter->get_prop(TYPE_ATTRNAME);
-				if (fso_type != null) {
-					errordomain_name = error_name_index.get(fso_type);
-				}
-				if (errordomain_name == null) {
-					stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
-						interface_name, name, fso_type);
-				}
+            if (!first_error) {
+                throws_builder.append(", ");
+            }
+            throws_builder.append("DBus.Error");
 
-				if (!first_error) {
-					throws_builder.append(", ");
-				}
-				throws_builder.append(errordomain_name);
-				first_error = false;
-				break;
-			case ANNOTATION_ELTNAME:
-				string annotation_name = iter->get_prop(NAME_ATTRNAME);
-				if (annotation_name == "org.freedesktop.DBus.GLib.Async") {
-					async_method = true;
-				}
-				break;
-			}
-		}
+            output.printf("\n");
+            output.printf("%spublic %s %s %s(%s) throws %s { \n",
+                get_indent(), (async_method ? "async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
+            update_indent(+1);
+            output.printf("%s%s%s %s.%s(%s);\n",get_indent(), return_value_type == "void"? "": "return ",
+                async_method ? "yield":"", uncapitalize(interface_name), name, call_args_builder.str);
+            update_indent(-1);
+            output.printf("%s}\n", get_indent());
+        }
 
-		if (!first_error) {
-			throws_builder.append(", ");
-		}
-		throws_builder.append("DBus.Error");
+        private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
+                throws GeneratorError {
+            string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
+            int unknown_param_count = 0;
 
-		output.printf("\n");
-		output.printf("%spublic %s %s %s(%s) throws %s { \n",
-			get_indent(), (async_method ? "async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
-        update_indent(+1);
-        output.printf("%s%s%s %s.%s(%s);\n",get_indent(), return_value_type == "void"? "": "return ",
-            async_method ? "yield":"", uncapitalize(interface_name), name, call_args_builder.str);
-        update_indent(-1);
-        output.printf("%s}\n", get_indent());
-	}
+            bool first_param = true;
+            StringBuilder args_builder = new StringBuilder();
+            for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
+                if (iter->type != ElementType.ELEMENT_NODE)
+                    continue;
 
-	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
-			throws GeneratorError {
-		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
-		int unknown_param_count = 0;
+                if (iter->name != ARG_ELTNAME)
+                    continue;
 
-		bool first_param = true;
-		StringBuilder args_builder = new StringBuilder();
-		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
-				continue;
+                string param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
+                if(param_name == null || param_name == "") {
+                    param_name = "param%i".printf(unknown_param_count);
+                    unknown_param_count++;
+                }
+                string param_type = "unknown";
+                try {
+                    param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
+                        iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
+                        interface_name + capitalize(param_name),
+                        dbus_namespace);
+                } catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+                    stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
+                        interface_name, name, ex.message);
+                }
 
-			if (iter->name != ARG_ELTNAME)
-				continue;
+                if (!first_param) {
+                    args_builder.append(", ");
+                }
 
-			string param_name = transform_registered_name(iter->get_prop(NAME_ATTRNAME));
-			if(param_name == null || param_name == "") {
-				param_name = "param%i".printf(unknown_param_count);
-				unknown_param_count++;
-			}
-			string param_type = "unknown";
-			try {
-				param_type = translate_type(iter->get_prop(TYPE_ATTRNAME),
-					iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
-					interface_name + capitalize(param_name),
-					dbus_namespace);
-			} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-				stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
-					interface_name, name, ex.message);
-			}
+                args_builder.append(param_type);
+                args_builder.append(" ");
+                args_builder.append(param_name);
+                first_param = false;
+            }
 
-			if (!first_param) {
-				args_builder.append(", ");
-			}
+            output.printf("\n");
+            output.printf("%spublic signal void %s(%s);\n",
+                get_indent(), name, args_builder.str);
+        }
 
-			args_builder.append(param_type);
-			args_builder.append(" ");
-			args_builder.append(param_name);
-			first_param = false;
-		}
+        private void generate_error(Xml.Node* node, string interface_name)
+                throws GeneratorError {
+        }
 
-		output.printf("\n");
-		output.printf("%spublic signal void %s(%s);\n",
-			get_indent(), name, args_builder.str);
-	}
+        private string translate_type(string type, string? fso_type, string type_name, string dbus_namespace)
+                throws GeneratorError {
+            string tail = null;
+            if (fso_type != null) {
+                var vala_type = name_index.get(fso_type);
+                if (vala_type == null) {
+                    throw new GeneratorError.UNKNOWN_DBUS_TYPE(fso_type);
+                }
+                return vala_type + (type.has_prefix("a") ? "[]" : "");
+            }
+            return parse_type(type, out tail, type_name, dbus_namespace).replace("][", ",");
+        }
 
-	private void generate_error(Xml.Node* node, string interface_name)
-			throws GeneratorError {
-	}
+        private string parse_type(string type, out string tail, string type_name, string dbus_namespace)
+                throws GeneratorError {
+            tail = type.substring(1);
+            if (type.has_prefix("y")) {
+                return "uchar";
+            } else if (type.has_prefix("b")) {
+                return "bool";
+            } else if (type.has_prefix("n") || type.has_prefix("i")) {
+                return "int";
+            } else if (type.has_prefix("q") || type.has_prefix("u")) {
+                return "uint";
+            } else if (type.has_prefix("x")) {
+                return "int64";
+            } else if (type.has_prefix("t")) {
+                return "uint64";
+            } else if (type.has_prefix("d")) {
+                return "double";
+            } else if (type.has_prefix("s")) {
+                return "string";
+            } else if (type.has_prefix("o")) {
+                return "ObjectPath";
+            } else if (type.has_prefix("v")) {
+                return "GLib.Value";
+            } else if (type.has_prefix("a{")) {
+                string tmp_type = get_subsignature(type, '{', '}', out tail);
+                string tail2 = null;
+                string tail3 = null;
 
-	private string translate_type(string type, string? fso_type, string type_name, string dbus_namespace)
-			throws GeneratorError {
-		string tail = null;
-		if (fso_type != null) {
-			var vala_type = name_index.get(fso_type);
-			if (vala_type == null) {
-				throw new GeneratorError.UNKNOWN_DBUS_TYPE(fso_type);
-			}
-			return vala_type + (type.has_prefix("a") ? "[]" : "");
-		}
-		return parse_type(type, out tail, type_name, dbus_namespace).replace("][", ",");
-	}
+                StringBuilder vala_type = new StringBuilder();
+                vala_type.append("GLib.HashTable<");
+            string foo =parse_type(tmp_type, out tail2, plural_to_singular(type_name) + "Key", dbus_namespace);
+            vala_type.append(foo);
+            vala_type.append(", ");
 
-	private string parse_type(string type, out string tail, string type_name, string dbus_namespace)
-			throws GeneratorError {
-		tail = type.substring(1);
-		if (type.has_prefix("y")) {
-			return "uchar";
-		} else if (type.has_prefix("b")) {
-			return "bool";
-		} else if (type.has_prefix("n") || type.has_prefix("i")) {
-			return "int";
-		} else if (type.has_prefix("q") || type.has_prefix("u")) {
-			return "uint";
-		} else if (type.has_prefix("x")) {
-			return "int64";
-		} else if (type.has_prefix("t")) {
-			return "uint64";
-		} else if (type.has_prefix("d")) {
-			return "double";
-		} else if (type.has_prefix("s")) {
-			return "string";
-		} else if (type.has_prefix("o")) {
-			return "ObjectPath";
-		} else if (type.has_prefix("v")) {
-			return "GLib.Value";
-		} else if (type.has_prefix("a{")) {
-			tail = tail.substring(1, tail.length - 2);
-			string tail2 = null;
-			string tail3 = null;
+            string value_type = parse_type(tail2, out tail3, plural_to_singular(type_name), dbus_namespace);
+            if (value_type == "GLib.Value") {
+                value_type += "?";
+            }
+            vala_type.append(value_type);
+            vala_type.append(">");
 
-			StringBuilder vala_type = new StringBuilder();
-			vala_type.append("GLib.HashTable<");
-			vala_type.append(parse_type(tail, out tail2, plural_to_singular(type_name) + "Key", dbus_namespace));
-			vala_type.append(", ");
+            return vala_type.str;
+        } else if (type.has_prefix("a")) {
+            string tail2 = null;
+            return parse_type(tail, out tail2, plural_to_singular(type_name), dbus_namespace) + "[]";
+        } else if (type.has_prefix("(")) {
+            string sub_type = get_subsignature(type, '(', ')', out tail);
+            int number = 2;
+            string unique_type_name = type_name +"Struct";
+            while (structs_to_generate.contains(unique_type_name)) {
+                unique_type_name = "%s%d".printf(unique_type_name, number++);
+            }
 
-			string value_type = parse_type(tail2, out tail3, plural_to_singular(type_name), dbus_namespace);
-			if (value_type == "GLib.Value") {
-				value_type += "?";
-			}
-			vala_type.append(value_type);
-			vala_type.append(">");
-
-			tail = tail3;
-			return vala_type.str;
-		} else if (type.has_prefix("a")) {
-			string tail2 = null;
-			return parse_type(tail, out tail2, plural_to_singular(type_name), dbus_namespace) + "[]";
-		} else if (type.has_prefix("(")) {
-			tail = tail.substring(0, tail.length - 1);
-
-			int number = 2;
-			string unique_type_name = type_name;
-			while (structs_to_generate.contains(unique_type_name)) {
-				unique_type_name = "%s%d".printf(type_name, number++);
-			}
-
-			if (!name_index.contains(dbus_namespace + "." + unique_type_name)) {
-				structs_to_generate.set(unique_type_name, tail);
-			}
-			return unique_type_name;
-		}
-		throw new GeneratorError.UNKNOWN_DBUS_TYPE(type);
+            if (!name_index.contains(dbus_namespace + "." + unique_type_name)) {
+                structs_to_generate.set(unique_type_name, sub_type);
+            }
+            return unique_type_name;
+    }
+		throw new GeneratorError.UNKNOWN_DBUS_TYPE(@"dbustype: '$type' unknown");
 	}
 
 	private string get_struct_name(string interface_name, string param_name) {
@@ -1076,4 +1074,32 @@ public class BindingGenerator : Object {
 	private void update_indent(int increment) {
 		indentSize += increment;
 	}
+    private string get_subsignature( string s, char start, char end, out string tail )
+    {
+        unowned char[] data = (char[])s;
+        int iter = 0;
+        int counter = 0;
+        int begin = 0;
+        bool first = true;
+        char c;
+
+        for(iter = 0; iter < s.len(); iter++) {
+            c = data[iter];
+            if(c == start) {
+                if( counter == 0 ) {
+                    begin = iter;
+                }
+                counter ++;
+            }
+            else if(c == end) {
+                counter --;
+                if(counter == 0) {
+                     break;
+                }
+            }
+        }
+        tail = s.substring( iter + 1, -1 );
+        var tmp = s.substring( begin + 1, iter - begin - 1);
+        return tmp;
+    }
 }
