@@ -1,10 +1,10 @@
-/**
+/*
  * vala-dbus-binding-tool.vala
- *
- * Authored by Didier "Ptitjes" <ptitjes@free.fr>
- *
+ * 
+ * (C) 2009 by Didier "Ptitjes" <ptitjes@free.fr>
+ * 
  * GPLv3
- **/
+ */
 using GLib;
 using Xml;
 using Gee;
@@ -50,7 +50,7 @@ public class BindingGenerator : Object {
 		registered_names.add("message");
 		registered_names.add("get_type");
 		registered_names.add("dispose");
-        registered_names.add("result");
+		registered_names.add("result");
 	}
 
 	public static int main(string[] args) {
@@ -115,7 +115,7 @@ public class BindingGenerator : Object {
 
 	private static void show_version() {
 		stdout.printf(@"Vala D-Bus Binding Tool $(Config.PACKAGE_VERSION)\n");
-		stdout.printf("Copyright (C) 2009 SHR <shr-project.org>\n");
+		stdout.printf("Written by Didier \"Ptitjes\" <ptitjes@free.fr>\n");
 		stdout.printf("This is free software; see the source for copying conditions.\n");
 		stdout.printf("There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 	}
@@ -443,38 +443,37 @@ public class BindingGenerator : Object {
 		}
 	}
 
-    private void generate_proxy_class( string interface_name, Xml.Node* node)
-            throws GeneratorError {
+	private void generate_proxy_class( string interface_name, Xml.Node* node) throws GeneratorError {
 		string dbus_name = node->get_prop(NAME_ATTRNAME);
-        string proxy_name = get_proxy_from_interface(interface_name);
+		string proxy_name = get_proxy_from_interface(interface_name);
 
-        output.printf("\n");
-        output.printf(@"$(get_indent())//Proxy class for interface $interface_name\n");
-        output.printf(@"$(get_indent())public class $proxy_name: GLib.Object, $interface_name {\n");
-        output.printf(@"$(get_indent())\n");
-        update_indent(+1);
-        
-        output.printf(@"$(get_indent())private $interface_name $(uncapitalize(interface_name));\n");
-        output.printf(@"$(get_indent())\n");
+		output.printf("\n");
+		output.printf(@"$(get_indent())//Proxy class for interface $interface_name\n");
+		output.printf(@"$(get_indent())public class $proxy_name: GLib.Object, $interface_name {\n");
+		output.printf(@"$(get_indent())\n");
+		update_indent(+1);
 
-        output.printf(@"$(get_indent())public $proxy_name (DBus.Connection con, string bus_name, ObjectPath path) {\n");
-        update_indent(+1);
-        output.printf(@"$(get_indent())$(uncapitalize(interface_name)) = con.get_object (bus_name,path) as $interface_name;\n");
-        update_indent(-1);
-        output.printf(@"$(get_indent())}\n");
-        generate_proxy_members(node, interface_name, get_namespace_name(dbus_name));
-        update_indent(-1);
-        output.printf(@"$(get_indent())}");
+		output.printf(@"$(get_indent())private $interface_name $(uncapitalize(interface_name));\n");
+		output.printf(@"$(get_indent())\n");
 
-        //Do not regen structs, they should be generated for interfaces already
-        structs_to_generate.clear();
-    }
-    private string get_proxy_from_interface( string iface ) {
-        return iface + "Proxy";
-    }
+		output.printf(@"$(get_indent())public $proxy_name (DBus.Connection con, string bus_name, ObjectPath path) {\n");
+		update_indent(+1);
+		output.printf(@"$(get_indent())$(uncapitalize(interface_name)) = con.get_object (bus_name,path) as $interface_name;\n");
+		update_indent(-1);
+		output.printf(@"$(get_indent())}\n");
+		generate_proxy_members(node, interface_name, get_namespace_name(dbus_name));
+		update_indent(-1);
+		output.printf(@"$(get_indent())}");
 
-	private void generate_enumeration(string enumeration_name, Xml.Node* node)
-			throws GeneratorError {
+		//Do not regen structs, they should be generated for interfaces already
+		structs_to_generate.clear();
+	}
+
+	private string get_proxy_from_interface( string iface ) {
+		return iface + "Proxy";
+	}
+
+	private void generate_enumeration(string enumeration_name, Xml.Node* node) throws GeneratorError {
 		string type = node->get_prop(TYPE_ATTRNAME);
 		bool string_enum = type == "s";
 
@@ -1074,32 +1073,32 @@ public class BindingGenerator : Object {
 	private void update_indent(int increment) {
 		indentSize += increment;
 	}
-    private string get_subsignature( string s, char start, char end, out string tail )
-    {
-        unowned char[] data = (char[])s;
-        int iter = 0;
-        int counter = 0;
-        int begin = 0;
-        bool first = true;
-        char c;
+	
+	private string get_subsignature( string s, char start, char end, out string tail ) {
+		unowned char[] data = (char[])s;
+		int iter = 0;
+		int counter = 0;
+		int begin = 0;
+		bool first = true;
+		char c;
 
-        for(iter = 0; iter < s.len(); iter++) {
-            c = data[iter];
-            if(c == start) {
-                if( counter == 0 ) {
-                    begin = iter;
-                }
-                counter ++;
-            }
-            else if(c == end) {
-                counter --;
-                if(counter == 0) {
-                     break;
-                }
-            }
-        }
-        tail = s.substring( iter + 1, -1 );
-        var tmp = s.substring( begin + 1, iter - begin - 1);
-        return tmp;
-    }
+		for(iter = 0; iter < s.len(); iter++) {
+			c = data[iter];
+    			if(c == start) {
+				if( counter == 0 ) {
+					begin = iter;
+				}
+				counter ++;
+			}
+			else if(c == end) {
+				counter --;
+				if(counter == 0) {
+					break;
+				}
+			}
+		}
+		tail = s.substring( iter + 1, -1 );
+		var tmp = s.substring( begin + 1, iter - begin - 1);
+		return tmp;
+    	}
 }
