@@ -915,7 +915,6 @@ public class BindingGenerator : Object {
 		int iter = 0;
 		int counter = 0;
 		int begin = 0;
-		bool first = true;
 		char c;
 
 		for(iter = 0; iter < s.len(); iter++) {
