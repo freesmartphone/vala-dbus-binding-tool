@@ -57,12 +57,16 @@ public class BindingGenerator : Object {
 
 	public static void INFO(string msg) {
 		if (verbosity >= 1)
-			stderr.printf(msg);
+			stderr.printf(msg+"\n");
 	}
 
 	public static void DEBUG(string msg) {
 		if (verbosity >= 2)
-			stderr.printf(msg);
+			stderr.printf(msg+"\n");
+	}
+
+	public static void ERROR(string msg) {
+		stderr.printf(msg+"\n");
 	}
 
 	public static int main(string[] args) {
@@ -205,6 +209,7 @@ public class BindingGenerator : Object {
 	}
 
 	private void add_api_file(string api_file) throws GeneratorError {
+		INFO(@"Adding API file $api_file");
 		// Parse the API document from path
 		Xml.Doc* api_doc = Parser.parse_file(api_file);
 		if (api_doc == null) {
@@ -538,8 +543,7 @@ public class BindingGenerator : Object {
 						iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
 						struct_name, get_namespace_name(dbus_name));
 				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-					stdout.printf("Error in struct %s field %s : Unknown dbus type %s\n",
-						struct_name, field_name, ex.message);
+					ERROR(@"Error in struct $struct_name field $field_name : Unknown dbus type $(ex.message)");
 				}
 
 				output.printf("%spublic %s %s;\n", get_indent(), field_type, field_name);
@@ -626,8 +630,7 @@ public class BindingGenerator : Object {
 							get_struct_name(interface_name, param_name),
 							dbus_namespace);
 					} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-						stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
-							interface_name, name, ex.message);
+						ERROR(@"Error in interface $interface_name method $name : Unknown dbus type $(ex.message)");
 					}
 					string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
 
@@ -670,8 +673,7 @@ public class BindingGenerator : Object {
 						errordomain_name = error_name_index.get(fso_type);
 					}
 					if (errordomain_name == null) {
-						stdout.printf("Error in interface %s method %s : Unknown dbus error %s\n",
-							interface_name, name, fso_type);
+						ERROR(@"Error in interface $interface_name method $name : Unknown dbus error $(fso_type)");
 					}
 
 					if (!first_error) {
@@ -740,8 +742,7 @@ public class BindingGenerator : Object {
 						interface_name + capitalize(param_name),
 						dbus_namespace);
 				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-					stdout.printf("Error in interface %s method %s : Unknown dbus type %s\n",
-						interface_name, name, ex.message);
+					ERROR(@"Error in interface $interface_name signal $name : Unknown dbus type $(ex.message)");
 				}
 
 				if (!first_param) {
