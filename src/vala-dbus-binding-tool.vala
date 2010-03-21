@@ -29,6 +29,7 @@ public class BindingGenerator : Object {
 
 	private static Set<string> registered_names = new HashSet<string>(str_hash, str_equal);
 	private static int verbosity;
+	private static int errors;
 
 	static construct {
 		registered_names.add("using");
@@ -57,16 +58,17 @@ public class BindingGenerator : Object {
 
 	public static void INFO(string msg) {
 		if (verbosity >= 1)
-			stderr.printf(msg+"\n");
+			stderr.printf(@"[INFO]  $msg\n");
 	}
 
 	public static void DEBUG(string msg) {
 		if (verbosity >= 2)
-			stderr.printf(msg+"\n");
+			stderr.printf(@"[DEBUG] $msg\n");
 	}
 
 	public static void ERROR(string msg) {
-		stderr.printf(msg+"\n");
+		stderr.printf(@"[ERROR] $msg\n");
+		errors++;
 	}
 
 	public static int main(string[] args) {
@@ -122,10 +124,15 @@ public class BindingGenerator : Object {
 		try {
 			generate(api_path, output_directory, namespace_renaming, command);
 		} catch (GLib.FileError ex) {
-			stderr.printf("%s: Error: %s\n", program_name, ex.message);
+			ERROR(ex.message);
 			return 1;
 		} catch (GeneratorError ex) {
-			stderr.printf("%s: Error: %s\n", program_name, ex.message);
+			ERROR(ex.message);
+			return 1;
+		}
+
+		if (errors > 0) {
+			stdout.printf( @"\n$errors errors detected in API files. The generated files will not be usable.\n" );
 			return 1;
 		}
 		return 0;
@@ -543,7 +550,7 @@ public class BindingGenerator : Object {
 						iter->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
 						struct_name, get_namespace_name(dbus_name));
 				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-					ERROR(@"Error in struct $struct_name field $field_name : Unknown dbus type $(ex.message)");
+					ERROR(@"In struct $struct_name field $field_name : Unknown dbus type $(ex.message)");
 				}
 
 				output.printf("%spublic %s %s;\n", get_indent(), field_type, field_name);
@@ -630,7 +637,7 @@ public class BindingGenerator : Object {
 							get_struct_name(interface_name, param_name),
 							dbus_namespace);
 					} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-						ERROR(@"Error in interface $interface_name method $name : Unknown dbus type $(ex.message)");
+						ERROR(@"In interface $interface_name method $name : Unknown dbus type $(ex.message)");
 					}
 					string? param_dir = iter->get_prop(DIRECTION_ATTRNAME);
 
@@ -673,7 +680,8 @@ public class BindingGenerator : Object {
 						errordomain_name = error_name_index.get(fso_type);
 					}
 					if (errordomain_name == null) {
-						ERROR(@"Error in interface $interface_name method $name : Unknown dbus error $(fso_type)");
+						ERROR(@"In interface $interface_name method $name : Unknown dbus error $(fso_type)");
+						errordomain_name = "<unknown>";
 					}
 
 					if (!first_error) {
@@ -742,7 +750,7 @@ public class BindingGenerator : Object {
 						interface_name + capitalize(param_name),
 						dbus_namespace);
 				} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
-					ERROR(@"Error in interface $interface_name signal $name : Unknown dbus type $(ex.message)");
+					ERROR(@"In interface $interface_name signal $name : Unknown dbus type $(ex.message)");
 				}
 
 				if (!first_param) {
