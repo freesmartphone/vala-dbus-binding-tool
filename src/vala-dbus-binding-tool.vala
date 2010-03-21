@@ -58,12 +58,12 @@ public class BindingGenerator : Object {
 
 	public static void INFO(string msg) {
 		if (verbosity >= 1)
-			stderr.printf(@"[INFO]  $msg\n");
+			stdout.printf(@"[INFO]  $msg\n");
 	}
 
 	public static void DEBUG(string msg) {
 		if (verbosity >= 2)
-			stderr.printf(@"[DEBUG] $msg\n");
+			stdout.printf(@"[DEBUG] $msg\n");
 	}
 
 	public static void ERROR(string msg) {
@@ -246,14 +246,20 @@ public class BindingGenerator : Object {
 
 	private void preprocess_binding_names(Xml.Doc* api_doc) {
 		for (Xml.Node* iter = api_doc->get_root_element()->children; iter != null; iter = iter->next) {
-			if (iter->type != ElementType.ELEMENT_NODE)
+			//FIXME: Use $(iter->type) when enum to_string works
+			DEBUG(@"   Processing $(iter->name) as type %d".printf(iter->type));
+			if (iter->type != ElementType.ELEMENT_NODE) {
+				DEBUG(@"      not a node; continuing");
 				continue;
+			}
 
 			if (iter->name != INTERFACE_ELTNAME
 				&& iter->name != ENUMERATION_ELTNAME
 				&& iter->name != ERRORDOMAIN_ELTNAME
-				&& iter->name != STRUCT_ELTNAME)
+				&& iter->name != STRUCT_ELTNAME) {
+				DEBUG(@"      not interface or enumeration or errordomain or struct; continuing");
 				continue;
+			}
 
 			string no_error_container_string = iter->get_ns_prop(NO_CONTAINER_ATTRNAME, FSO_NAMESPACE);
 			bool no_error_container = (no_error_container_string != null && no_error_container_string == "true");
@@ -347,7 +353,9 @@ public class BindingGenerator : Object {
 			if (!ns.members.contains(interface_name)) {
 				ns.members.set(interface_name, iter);
 			} else {
-				//TODO Error already existing interface
+				Xml.Node* iter2 = ns.members.get(interface_name);
+				var name = iter2->get_prop(NAME_ATTRNAME);
+				ERROR(@"$interface_name has been added already as namespace $name");
 			}
 		}
 	}
@@ -360,6 +368,7 @@ public class BindingGenerator : Object {
 				Xml.Node* api = ns.members.get(name);
 				string dbus_name = api->get_prop(NAME_ATTRNAME);
 				if (api->name == ERRORDOMAIN_ELTNAME) {
+					INFO(@"Registering new errordomain $dbus_name");
 					error_name_index.set(dbus_name, namespace_name + "." + name);
 				} else {
 					name_index.set(dbus_name, namespace_name + "." + name);
@@ -620,7 +629,7 @@ public class BindingGenerator : Object {
 					throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
-		INFO(@"Generating method $name for $interface_name");
+		INFO(@"   Generating method $name for $interface_name");
 
 		int unknown_param_count = 0;
 
@@ -742,7 +751,7 @@ public class BindingGenerator : Object {
 					throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
-		INFO(@"Generating signal $name for $interface_name");
+		INFO(@"   Generating signal $name for $interface_name");
 
 		int unknown_param_count = 0;
 
