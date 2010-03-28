@@ -1,0 +1,4 @@
+NEW in 0.1.5
+============
+* More verbose error output
+* Support the new [DBus (timeout = %u)] attribute for static clients

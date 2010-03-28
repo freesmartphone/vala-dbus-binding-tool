@@ -10,11 +10,12 @@ dist_pkgconfig_DATA = vala-dbus-binding-tool-1.0.pc
 EXTRA_DIST = \
 	intltool-extract.in \
 	intltool-update.in \
-	intltool-merge.in
+	intltool-merge.in \
+	AUTHORS \
+	MAINTAINERS
 
 DISTCLEANFILES = \
 	intltool-extract \
 	intltool-update \
 	intltool-merge \
 	po/.intltool-merge-cache
-

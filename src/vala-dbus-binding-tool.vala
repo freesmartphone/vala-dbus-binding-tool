@@ -1,9 +1,9 @@
 /*
  * vala-dbus-binding-tool.vala
- * 
+ *
  * (C) 2009 by Didier "Ptitjes" <ptitjes@free.fr>
  * (C) 2009-2010 the freesmartphone.org team <smartphones-standards@linuxtogo.org>
- * 
+ *
  * GPLv3
  */
 using GLib;
@@ -72,12 +72,15 @@ public class BindingGenerator : Object {
 	}
 
 	public static int main(string[] args) {
+		//FIXME: Convert to OptionEntry
 		string[] split_name = args[0].split("/");
 		string program_name = split_name[split_name.length - 1];
 		string command = string.joinv(" ", args);
 
 		string api_path = null;
 		string output_directory = null;
+		uint dbus_timeout = 120000;
+
 		Map<string,string> namespace_renaming = new HashMap<string,string>(str_hash, str_equal, str_equal);
 
 		for (int i = 1; i < args.length; i++) {
@@ -109,6 +112,9 @@ public class BindingGenerator : Object {
 				string[] ns_split = split_arg[1].split(":");
 				namespace_renaming.set(ns_split[0], ns_split[1]);
 				break;
+			case "--dbus-timeout":
+				dbus_timeout = (uint) split_arg[1].to_int();
+				break;
 			default:
 				stdout.printf("%s: Unknown option %s\n", program_name, arg);
 				show_usage(program_name);
@@ -122,7 +128,7 @@ public class BindingGenerator : Object {
 			output_directory = ".";
 
 		try {
-			generate(api_path, output_directory, namespace_renaming, command);
+			generate(api_path, output_directory, namespace_renaming, command, dbus_timeout);
 		} catch (GLib.FileError ex) {
 			ERROR(ex.message);
 			return 1;
@@ -140,7 +146,7 @@ public class BindingGenerator : Object {
 
 	private static void show_version() {
 		stdout.printf(@"Vala D-Bus Binding Tool $(Config.PACKAGE_VERSION)\n");
-		stdout.printf("Written by Didier \"Ptitjes\" <ptitjes@free.fr>\n");
+		stdout.printf("Written by Didier \"Ptitjes\" and the freesmartphone.org team\n");
 		stdout.printf("This is free software; see the source for copying conditions.\n");
 		stdout.printf("There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 	}
@@ -148,30 +154,32 @@ public class BindingGenerator : Object {
 	private static void show_usage(string program_name) {
 		stdout.printf("Usage:\n");
 		stdout.printf("  %s [-v] [--version] [--help]\n", program_name);
-		stdout.printf("  %s [--api-path=PATH] [--directory=DIR] [--strip-namespace=NS]* [--rename-namespace=OLD_NS:NEW_NS]*\n", program_name);
+		stdout.printf("  %s [--api-path=PATH] [--dbus-timeout=TIMEOUT] [--directory=DIR] [--strip-namespace=NS]* [--rename-namespace=OLD_NS:NEW_NS]*\n", program_name);
 	}
 
 	public static void generate(string api_path, string output_directory,
-	                Map<string,string> namespace_renaming, string command)
+	                Map<string,string> namespace_renaming, string command, uint dbus_timeout)
 	                throws GeneratorError, GLib.FileError {
 
 		Parser.init();
 
-		BindingGenerator generator = new BindingGenerator(output_directory, namespace_renaming, command);
+		BindingGenerator generator = new BindingGenerator(output_directory, namespace_renaming, command, dbus_timeout);
 		generator.generate_bindings(api_path);
 
 		Parser.cleanup();
 	}
 
-	private BindingGenerator(string output_directory, Map<string,string> namespace_renaming, string command) {
+	private BindingGenerator(string output_directory, Map<string,string> namespace_renaming, string command, uint dbus_timeout) {
 		this.output_directory = output_directory;
 		this.namespace_renaming = namespace_renaming;
 		this.command = command;
+		this.dbus_timeout = dbus_timeout;
 	}
 
 	private string output_directory;
 	private Map<string,string> namespace_renaming;
 	private string command;
+	private uint dbus_timeout;
 	private bool inner_interface_strategy_concat = true;
 
 	private static const string FSO_NAMESPACE = "http://www.freesmartphone.org/schemas/DBusSpecExtension";
@@ -463,7 +471,7 @@ public class BindingGenerator : Object {
 		INFO(@"Generating interface $dbus_name");
 
 		output.printf("\n");
-		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), dbus_name);
+		output.printf("%s[DBus (name = \"%s\", timeout = %u)]\n", get_indent(), dbus_name, dbus_timeout);
 		output.printf("%spublic interface %s : GLib.Object {\n", get_indent(), interface_name);
 		update_indent(+1);
 
@@ -586,7 +594,7 @@ public class BindingGenerator : Object {
 	private void generate_struct(string name, string content_signature, string dbus_namespace)
 					throws GeneratorError {
 		INFO(@"Generating struct $name w/ signature $content_signature in dbus namespace $dbus_namespace");
-						
+
 		output.printf("\n");
 		output.printf("%spublic struct %s {\n", get_indent(), name);
 		update_indent(+1);
@@ -968,7 +976,7 @@ public class BindingGenerator : Object {
 	private void update_indent(int increment) {
 		indentSize += increment;
 	}
-	
+
 	private string get_subsignature( string s, char start, char end, out string tail ) {
 		unowned char[] data = (char[])s;
 		int iter = 0;
