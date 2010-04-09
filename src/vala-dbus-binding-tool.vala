@@ -832,7 +832,7 @@ public class BindingGenerator : Object {
 					throws GeneratorError {
 		tail = type.substring(1);
 		if (type.has_prefix("y")) {
-			return "uchar";
+			return "uint8"; // uchar only works since post-vala 0.8.0 (see c4cf64b6590e5cce21febf98b1f3ff935d921fd5)
 		} else if (type.has_prefix("b")) {
 			return "bool";
 		} else if (type.has_prefix("n") || type.has_prefix("i")) {
