@@ -16,6 +16,12 @@ public errordomain GeneratorError {
 	UNKNOWN_DBUS_TYPE
 }
 
+public enum Synchrony {
+	AUTO,
+	FORCE_SYNC,
+	FORCE_ASYNC
+}
+
 internal class GeneratedNamespace {
 	public GeneratedNamespace parent;
 	public string name;
@@ -30,6 +36,7 @@ public class BindingGenerator : Object {
 	private static Set<string> registered_names = new HashSet<string>(str_hash, str_equal);
 	private static int verbosity;
 	private static int errors;
+	private static bool synced;
 
 	static construct {
 		registered_names.add("using");
@@ -80,6 +87,7 @@ public class BindingGenerator : Object {
 		string api_path = null;
 		string output_directory = null;
 		uint dbus_timeout = 120000;
+		synced = true;
 
 		Map<string,string> namespace_renaming = new HashMap<string,string>(str_hash, str_equal, str_equal);
 
@@ -114,6 +122,9 @@ public class BindingGenerator : Object {
 				break;
 			case "--dbus-timeout":
 				dbus_timeout = (uint) split_arg[1].to_int();
+				break;
+			case "--no-synced":
+				synced = false;
 				break;
 			default:
 				stdout.printf("%s: Unknown option %s\n", program_name, arg);
@@ -154,7 +165,7 @@ public class BindingGenerator : Object {
 	private static void show_usage(string program_name) {
 		stdout.printf("Usage:\n");
 		stdout.printf("  %s [-v] [--version] [--help]\n", program_name);
-		stdout.printf("  %s [--api-path=PATH] [--dbus-timeout=TIMEOUT] [--directory=DIR] [--strip-namespace=NS]* [--rename-namespace=OLD_NS:NEW_NS]*\n", program_name);
+		stdout.printf("  %s [--api-path=PATH] [--no-synced] [--dbus-timeout=TIMEOUT] [--directory=DIR] [--strip-namespace=NS]* [--rename-namespace=OLD_NS:NEW_NS]*\n", program_name);
 	}
 
 	public static void generate(string api_path, string output_directory,
@@ -430,8 +441,10 @@ public class BindingGenerator : Object {
 
 				switch (api->name) {
 				case INTERFACE_ELTNAME:
-					generate_interface(name, api);
+					generate_interface(name, api, Synchrony.AUTO);
 					generate_proxy_getter(api, name);
+					if ( synced )
+						generate_interface(name, api, Synchrony.FORCE_SYNC);
 					break;
 				case ENUMERATION_ELTNAME:
 					generate_enumeration(name, api);
@@ -463,19 +476,23 @@ public class BindingGenerator : Object {
 	private Gee.Map<string, string> structs_to_generate
 	        = new Gee.HashMap<string, string>(str_hash, str_equal, str_equal);
 
-	private void generate_interface(string interface_name, Xml.Node* node)
+	private void generate_interface(string interface_name, Xml.Node* node, Synchrony synchrony = Synchrony.AUTO)
 	                throws GeneratorError {
 		string dbus_name = node->get_prop(NAME_ATTRNAME);
 		string namespace_name = get_namespace_name(interface_name);
+
+		assert( synchrony != Synchrony.FORCE_ASYNC ); // not supported yet, maybe never
+
+		var iface_name = ( synchrony == Synchrony.FORCE_SYNC ) ? interface_name + "Sync" : interface_name;
 
 		INFO(@"Generating interface $dbus_name");
 
 		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\", timeout = %u)]\n", get_indent(), dbus_name, dbus_timeout);
-		output.printf("%spublic interface %s : GLib.Object {\n", get_indent(), interface_name);
+		output.printf("%spublic interface %s : GLib.Object {\n", get_indent(), iface_name);
 		update_indent(+1);
 
-		generate_members(node, interface_name, get_namespace_name(dbus_name));
+		generate_members(node, iface_name, get_namespace_name(dbus_name), synchrony);
 
 		update_indent(-1);
 		output.printf("%s}\n", get_indent());
@@ -613,7 +630,7 @@ public class BindingGenerator : Object {
 		output.printf("%s}\n", get_indent());
 	}
 
-	private void generate_members(Xml.Node* node, string interface_name, string dbus_namespace)
+	private void generate_members(Xml.Node* node, string interface_name, string dbus_namespace, Synchrony synchrony)
 					throws GeneratorError {
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
@@ -621,7 +638,7 @@ public class BindingGenerator : Object {
 
 			switch (iter->name) {
 			case METHOD_ELTNAME:
-				generate_method(iter, interface_name, dbus_namespace);
+				generate_method(iter, interface_name, dbus_namespace, synchrony);
 				break;
 			case SIGNAL_ELTNAME:
 				generate_signal(iter, interface_name, dbus_namespace);
@@ -633,7 +650,7 @@ public class BindingGenerator : Object {
 		}
 	}
 
-	private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace)
+	private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace, Synchrony synchrony)
 					throws GeneratorError {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
@@ -734,6 +751,19 @@ public class BindingGenerator : Object {
 			throws_builder.append(", ");
 		}
 		throws_builder.append("DBus.Error");
+
+		switch ( synchrony )
+		{
+			case Synchrony.FORCE_SYNC:
+				async_method = false;
+				break;
+			case Synchrony.FORCE_ASYNC:
+				async_method = true;
+				break;
+			default:
+				/* AUTO, leave it like it is */
+				break;
+		}
 
 		output.printf("\n");
 		output.printf("%spublic abstract %s %s %s(%s) throws %s;\n",
