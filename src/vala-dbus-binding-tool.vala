@@ -73,6 +73,10 @@ public class BindingGenerator : Object {
 			stdout.printf(@"[DEBUG] $msg\n");
 	}
 
+	public static void WARN(string msg) {
+		stderr.printf(@"[WARN]  $msg\n");
+	}
+
 	public static void ERROR(string msg) {
 		stderr.printf(@"[ERROR] $msg\n");
 		errors++;
@@ -666,6 +670,7 @@ public class BindingGenerator : Object {
 		StringBuilder throws_builder = new StringBuilder();
 		string return_value_type = "void";
 		bool async_method = false;
+		bool noreply_method = false;
 
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
@@ -743,8 +748,20 @@ public class BindingGenerator : Object {
 				if (annotation_name == "org.freedesktop.DBus.GLib.Async") {
 					async_method = true;
 				}
+				if (annotation_name == "org.freedesktop.DBus.GLib.NoReply") {
+					noreply_method = true;
+				}
 				break;
 			}
+		}
+
+		if (async_method && noreply_method) {
+			WARN(@"In interface $interface_name method $name : Requested both async and noreply; which is not supported by Vala. Will force sync.");
+			async_method = false;
+		}
+
+		if (noreply_method && out_param_count > 0) {
+			ERROR(@"In interface $interface_name method $name : noreply methods are not allowed to have out parameters!");
 		}
 
 		if (!first_error) {
@@ -766,8 +783,11 @@ public class BindingGenerator : Object {
 		}
 
 		output.printf("\n");
-		output.printf("%spublic abstract %s %s %s(%s) throws %s;\n",
-			get_indent(), (async_method ? "async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
+		if (noreply_method) {
+			output.printf("%s[DBus (no_reply = true)]\n", get_indent());
+		}
+		output.printf("%spublic abstract%s %s %s(%s) throws %s;\n",
+			get_indent(), (async_method ? " async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
 	}
 
 	private int get_out_parameter_count(Xml.Node* node) {
