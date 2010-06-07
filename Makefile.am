@@ -12,7 +12,8 @@ EXTRA_DIST = \
 	intltool-update.in \
 	intltool-merge.in \
 	AUTHORS \
-	MAINTAINERS
+	MAINTAINERS \
+	vapi
 
 DISTCLEANFILES = \
 	intltool-extract \
