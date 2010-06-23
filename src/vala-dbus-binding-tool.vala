@@ -898,7 +898,7 @@ public class BindingGenerator : Object {
 		} else if (type.has_prefix("s")) {
 			return "string";
 		} else if (type.has_prefix("o")) {
-			return "ObjectPath";
+			return "DBus.ObjectPath"; // needs to be prefixed post vala 0.9.2 (see 142ca8fe0e5b4b8058d4913e909ccc820b6f7768 and 9a650b7f3bb796c36e31a7c649c7f59e8292631e)
 		} else if (type.has_prefix("v")) {
 			return "GLib.Value";
 		} else if (type.has_prefix("a{")) {
