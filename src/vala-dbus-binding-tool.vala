@@ -901,7 +901,7 @@ public class BindingGenerator : Object {
 			return "DBus.ObjectPath"; // needs to be prefixed post vala 0.9.2 (see 142ca8fe0e5b4b8058d4913e909ccc820b6f7768 and 9a650b7f3bb796c36e31a7c649c7f59e8292631e)
 		} else if (type.has_prefix("v")) {
 			return "GLib.Value";
-		} else if (type.has_prefix("a{")) {
+		} else if (type.has_prefix("a{") && type.has_suffix("}")) {
 			string tmp_type = get_subsignature(type, '{', '}', out tail);
 			string tail2 = null;
 			string tail3 = null;
@@ -923,7 +923,7 @@ public class BindingGenerator : Object {
 		} else if (type.has_prefix("a")) {
 			string tail2 = null;
 			return parse_type(tail, out tail2, plural_to_singular(type_name), dbus_namespace) + "[]";
-		} else if (type.has_prefix("(")) {
+		} else if (type.has_prefix("(") && type.has_suffix(")")) {
 			string sub_type = get_subsignature(type, '(', ')', out tail);
 			int number = 2;
 			string unique_type_name = type_name +"Struct";
