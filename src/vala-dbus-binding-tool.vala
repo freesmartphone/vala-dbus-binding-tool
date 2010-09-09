@@ -449,6 +449,7 @@ public class BindingGenerator : Object {
 					generate_proxy_getter(api, name);
 					if ( synced )
 						generate_interface(name, api, Synchrony.FORCE_SYNC);
+                                                generate_proxy_getter(api, name, Synchrony.FORCE_SYNC);
 					break;
 				case ENUMERATION_ELTNAME:
 					generate_enumeration(name, api);
@@ -856,8 +857,24 @@ public class BindingGenerator : Object {
 					throws GeneratorError {
 	}
 
-	private void generate_proxy_getter(Xml.Node* node, string interface_name)
+	private void generate_proxy_getter(Xml.Node* node, owned string interface_name, Synchrony synchrony = Synchrony.AUTO)
 					throws GeneratorError {
+                        bool async_method = true;
+                        switch ( synchrony )
+                        {
+                                case Synchrony.FORCE_SYNC:
+                                        async_method = false;
+                                        break;
+                                case Synchrony.FORCE_ASYNC:
+                                        async_method = true;
+                                        break;
+                                default:
+                                        /* AUTO, leave it like it is */
+                                        break;
+                        }
+                        if ( !async_method ) {
+                                interface_name = interface_name + "Sync";
+                        }
 			output.printf(@"\n$(get_indent())public $(interface_name) get_$(uncapitalize(interface_name))_proxy(DBus.Connection con, string busname, DBus.ObjectPath path) {");
 			update_indent(+1);
 			output.printf(@"\n$(get_indent())return con.get_object(busname, path) as $(interface_name);");
@@ -1034,7 +1051,7 @@ public class BindingGenerator : Object {
 		int begin = 0;
 		char c;
 
-		for(iter = 0; iter < s.len(); iter++) {
+		for(iter = 0; iter < s.length; iter++) {
 			c = data[iter];
     			if(c == start) {
 				if( counter == 0 ) {
