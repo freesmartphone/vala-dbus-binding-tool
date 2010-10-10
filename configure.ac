@@ -1,4 +1,4 @@
-AC_INIT([vala-dbus-binding-tool], [0.3.2], [ptitjes@free.fr], [vala-dbus-binding-tool])
+AC_INIT([vala-dbus-binding-tool], [0.3.3], [ptitjes@free.fr], [vala-dbus-binding-tool])
 AC_CONFIG_SRCDIR([src/Makefile.am])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE([dist-bzip2])
