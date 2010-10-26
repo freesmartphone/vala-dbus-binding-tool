@@ -773,7 +773,7 @@ public class BindingGenerator : Object {
 		if (!first_error) {
 			throws_builder.append(", ");
 		}
-		throws_builder.append( gdbus ? "IOError" : "DBus.Error");
+		throws_builder.append( gdbus ? "DBusError, IOError" : "DBus.Error");
 
 		switch ( synchrony )
 		{
