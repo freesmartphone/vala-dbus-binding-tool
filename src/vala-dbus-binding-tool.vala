@@ -614,8 +614,18 @@ public class BindingGenerator : Object {
 			}
 		string constructor = "%s ) {\n%s%s}".printf( ctor_signature.substring( 0, ctor_signature.length-2 ), ctor_body, get_indent() );
 
+		output.printf("\n%s\n", constructor);
+
+		if (gdbus) {
+		    INFO(@"Generating from_variant method for $struct_name");
+		    output.printf("\n%spublic static %s from_variant (Variant v) {\n", get_indent(), struct_name);
+		    update_indent(1);
+		    output.printf("%sreturn v as %s;\n", get_indent(), struct_name);
+		    update_indent(-1);
+		    output.printf("%s}\n", get_indent());
+		}
 		update_indent(-1);
-		output.printf("\n%s\n%s}\n", constructor, get_indent());
+		output.printf("%s}", get_indent());
 	}
 
 	private void generate_struct(string name, string content_signature, string dbus_namespace)
