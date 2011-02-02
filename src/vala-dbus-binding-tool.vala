@@ -672,9 +672,11 @@ public class BindingGenerator : Object {
 
 	private void generate_method(Xml.Node* node, string interface_name, string dbus_namespace, Synchrony synchrony)
 					throws GeneratorError {
+
+		string realname = node->get_prop(NAME_ATTRNAME);
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
-		INFO(@"   Generating method $name for $interface_name");
+		INFO(@"   Generating method $name (originally $realname) for $interface_name");
 
 		int unknown_param_count = 0;
 
@@ -800,7 +802,9 @@ public class BindingGenerator : Object {
 
 		output.printf("\n");
 		if (noreply_method) {
-			output.printf("%s[DBus (no_reply = true)]\n", get_indent());
+			output.printf("%s[DBus (name = %s, no_reply = true)]\n", get_indent(), realname);
+		} else {
+			output.printf("%s[DBus (name = %s)]\n", get_indent(), realname);
 		}
 		output.printf("%spublic abstract%s %s %s(%s) throws %s;\n",
 			get_indent(), (async_method ? " async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
