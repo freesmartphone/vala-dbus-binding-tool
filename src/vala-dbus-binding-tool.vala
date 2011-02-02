@@ -802,9 +802,9 @@ public class BindingGenerator : Object {
 
 		output.printf("\n");
 		if (noreply_method) {
-			output.printf("%s[DBus (name = %s, no_reply = true)]\n", get_indent(), realname);
+			output.printf("%s[DBus (name = \"%s\", no_reply = true)]\n", get_indent(), realname);
 		} else {
-			output.printf("%s[DBus (name = %s)]\n", get_indent(), realname);
+			output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
 		}
 		output.printf("%spublic abstract%s %s %s(%s) throws %s;\n",
 			get_indent(), (async_method ? " async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
