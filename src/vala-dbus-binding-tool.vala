@@ -827,9 +827,10 @@ public class BindingGenerator : Object {
 
 	private void generate_signal(Xml.Node* node, string interface_name, string dbus_namespace)
 					throws GeneratorError {
+		string realname = node->get_prop(NAME_ATTRNAME);
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
-		INFO(@"   Generating signal $name for $interface_name");
+		INFO(@"   Generating signal $name (originally $realname) for $interface_name");
 
 		int unknown_param_count = 0;
 
@@ -868,6 +869,7 @@ public class BindingGenerator : Object {
 		}
 
 		output.printf("\n");
+		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
 		output.printf("%spublic signal void %s(%s);\n",
 			get_indent(), name, args_builder.str);
 	}
