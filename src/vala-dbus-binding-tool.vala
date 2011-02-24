@@ -2,7 +2,7 @@
  * vala-dbus-binding-tool.vala
  *
  * (C) 2009 by Didier "Ptitjes" <ptitjes@free.fr>
- * (C) 2009-2010 the freesmartphone.org team <smartphones-standards@linuxtogo.org>
+ * (C) 2009-2011 the freesmartphone.org team <smartphones-standards@linuxtogo.org>
  *
  * GPLv3
  */
@@ -126,7 +126,7 @@ public class BindingGenerator : Object {
 				namespace_renaming.set(ns_split[0], ns_split[1]);
 				break;
 			case "--dbus-timeout":
-				dbus_timeout = (uint) split_arg[1].to_int();
+				dbus_timeout = int.parse( split_arg[1] );
 				break;
 			case "--no-synced":
 				synced = false;
@@ -316,18 +316,18 @@ public class BindingGenerator : Object {
 			for (; i < last_part; i++) {
 				string part = split_name[i];
 
-				if (namespace_renaming.contains(part) && namespace_renaming.get(part) != "") {
+				if (namespace_renaming.has_key(part) && namespace_renaming.get(part) != "") {
 					part = namespace_renaming.get(part);
 				}
 
-				if (ns.members.contains(part) && inner_interface_strategy_concat) {
-					if (ns.namespaces.contains(part)) {
+				if (ns.members.has_key(part) && inner_interface_strategy_concat) {
+					if (ns.namespaces.has_key(part)) {
 						GeneratedNamespace child = ns.namespaces.get(part);
 						foreach (string interf_name in child.members.keys) {
 							Xml.Node* interf = child.members.get(interf_name);
 							ns.members.set(part + interf_name, interf);
 						}
-						ns.namespaces.remove(part);
+						ns.namespaces.unset(part);
 						child.parent = null;
 					}
 
@@ -335,7 +335,7 @@ public class BindingGenerator : Object {
 				}
 
 				GeneratedNamespace child = null;
-				if (ns.namespaces.contains(part)) {
+				if (ns.namespaces.has_key(part)) {
 					child = ns.namespaces.get(part);
 				} else {
 					child = new GeneratedNamespace();
@@ -344,9 +344,9 @@ public class BindingGenerator : Object {
 					ns.namespaces.set(part, child);
 				}
 
-				if (ns.members.contains(part)) {
+				if (ns.members.has_key(part)) {
 						child.members.set(part, ns.members.get(part));
-						ns.members.remove(part);
+						ns.members.unset(part);
 				}
 
 				ns = child;
@@ -362,23 +362,23 @@ public class BindingGenerator : Object {
 				name_builder.append(short_name);
 				interface_name = name_builder.str;
 
-				if (ns.namespaces.contains(short_name)) {
+				if (ns.namespaces.has_key(short_name)) {
 					GeneratedNamespace child = ns.namespaces.get(short_name);
 					foreach (string interf_name in child.members.keys) {
 						Xml.Node* interf = child.members.get(interf_name);
 						ns.members.set(short_name + interf_name, interf);
 					}
-					ns.namespaces.remove(short_name);
+					ns.namespaces.unset(short_name);
 					child.parent = null;
 				}
 			} else {
-				if (ns.namespaces.contains(short_name)) {
+				if (ns.namespaces.has_key(short_name)) {
 					ns = ns.namespaces.get(short_name);
 				}
 				interface_name = short_name;
 			}
 
-			if (!ns.members.contains(interface_name)) {
+			if (!ns.members.has_key(interface_name)) {
 				ns.members.set(interface_name, iter);
 			} else {
 				Xml.Node* iter2 = ns.members.get(interface_name);
@@ -968,11 +968,11 @@ public class BindingGenerator : Object {
 			string sub_type = get_subsignature(type, '(', ')', out tail);
 			int number = 2;
 			string unique_type_name = type_name +"Struct";
-			while (structs_to_generate.contains(unique_type_name)) {
+			while (structs_to_generate.has_key(unique_type_name)) {
 				unique_type_name = "%s%d".printf(unique_type_name, number++);
 			}
 
-			if (!name_index.contains(dbus_namespace + "." + unique_type_name)) {
+			if (!name_index.has_key(dbus_namespace + "." + unique_type_name)) {
 				structs_to_generate.set(unique_type_name, sub_type);
 			}
 			return unique_type_name;
