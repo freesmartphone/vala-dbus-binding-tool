@@ -920,7 +920,7 @@ public class BindingGenerator : Object {
 
 		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
-		output.printf("%spublic %s %s { %s }\n", get_indent(), typename, name, accessimpl);
+		output.printf("%spublic abstract %s %s { %s }\n", get_indent(), typename, name, accessimpl);
 	}
 
 	private void generate_error(Xml.Node* node, string interface_name)
