@@ -210,6 +210,7 @@ public class BindingGenerator : Object {
 	private static const string NAME_ATTRNAME = "name";
 	private static const string TYPE_ATTRNAME = "type";
 	private static const string DIRECTION_ATTRNAME = "direction";
+	private static const string REPLACED_BY_ATTRNAME = "replaced-by";
 	private static const string IN_ATTRVALUE = "in";
 	private static const string OUT_ATTRVALUE = "out";
 	private static const string ENUMERATION_ELTNAME = "enumeration";
@@ -222,6 +223,7 @@ public class BindingGenerator : Object {
 	private static const string STRUCT_ELTNAME = "struct";
 	private static const string FIELD_ELTNAME = "field";
 	private static const string ANNOTATION_ELTNAME = "annotation";
+	private static const string DEPRECATED_ELTNAME = "deprecated";
 
 	private void generate_bindings(string api_path)
 	                throws GeneratorError, GLib.FileError {
@@ -689,6 +691,8 @@ public class BindingGenerator : Object {
 		string return_value_type = "void";
 		bool async_method = false;
 		bool noreply_method = false;
+		bool deprecated_method = false;
+		string deprecated_method_replaced_by = "";
 
 		for (Xml.Node* iter = node->children; iter != null; iter = iter->next) {
 			if (iter->type != ElementType.ELEMENT_NODE)
@@ -770,6 +774,10 @@ public class BindingGenerator : Object {
 					noreply_method = true;
 				}
 				break;
+			case DEPRECATED_ELTNAME:
+				deprecated_method = true;
+				deprecated_method_replaced_by = iter->get_prop(REPLACED_BY_ATTRNAME);
+				break;
 			}
 		}
 
@@ -805,6 +813,11 @@ public class BindingGenerator : Object {
 			output.printf("%s[DBus (name = \"%s\", no_reply = true)]\n", get_indent(), realname);
 		} else {
 			output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
+		}
+		if (deprecated_method) {
+			if (deprecated_method_replaced_by.length == 0)
+				output.printf("[Deprecated]\n");
+			else output.printf("[Deprecated (replacement = \"%s\")]".printf(deprecated_method_replaced_by));
 		}
 		output.printf("%spublic abstract%s %s %s(%s) throws %s;\n",
 			get_indent(), (async_method ? " async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
