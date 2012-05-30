@@ -206,6 +206,7 @@ public class BindingGenerator : Object {
 	private static const string INTERFACE_ELTNAME = "interface";
 	private static const string METHOD_ELTNAME = "method";
 	private static const string SIGNAL_ELTNAME = "signal";
+	private static const string PROPERTY_ELTNAME = "property";
 	private static const string ARG_ELTNAME = "arg";
 	private static const string NAME_ATTRNAME = "name";
 	private static const string TYPE_ATTRNAME = "type";
@@ -665,6 +666,9 @@ public class BindingGenerator : Object {
 			case SIGNAL_ELTNAME:
 				generate_signal(iter, interface_name, dbus_namespace);
 				break;
+			case PROPERTY_ELTNAME:
+				generate_property(iter, interface_name, dbus_namespace);
+				break;
 			case ERROR_ELTNAME:
 				generate_error(iter, interface_name);
 				break;
@@ -885,6 +889,38 @@ public class BindingGenerator : Object {
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
 		output.printf("%spublic signal void %s(%s);\n",
 			get_indent(), name, args_builder.str);
+	}
+
+	private void generate_property(Xml.Node* node, string interface_name, string dbus_namespace)
+	{
+		string realname = node->get_prop(NAME_ATTRNAME);
+		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
+
+		string typename = "unknown";
+		try {
+			typename = translate_type(node->get_prop(TYPE_ATTRNAME),
+				node->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
+				interface_name + capitalize(name),
+				dbus_namespace);
+		} catch (GeneratorError.UNKNOWN_DBUS_TYPE ex) {
+			ERROR(@"In interface $interface_name property $name : Unknown dbus type $(ex.message)");
+		}
+
+		string accesstype = "readwrite";
+		if (node->has_prop("access") != null) {
+			accesstype = node->get_prop("access");
+			if (accesstype != "readwrite" && accesstype != "readonly") {
+				ERROR(@"In interface $interface_name property $name : Unknown access type: $accesstype");
+			}
+		}
+
+		INFO(@"   Generating property $name (originally $realname) of type $typename for $interface_name");
+
+		string accessimpl = (accesstype == "readonly") ? "get;" : "get; set;";
+
+		output.printf("\n");
+		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
+		output.printf("%spublic %s %s { %s }\n", get_indent(), typename, name, accessimpl);
 	}
 
 	private void generate_error(Xml.Node* node, string interface_name)
