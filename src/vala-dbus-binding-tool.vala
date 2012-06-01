@@ -897,8 +897,10 @@ public class BindingGenerator : Object {
 		string name = transform_registered_name(uncapitalize(node->get_prop(NAME_ATTRNAME)));
 
 		string typename = "unknown";
+		string rawtype = "";
 		try {
-			typename = translate_type(node->get_prop(TYPE_ATTRNAME),
+			rawtype = node->get_prop(TYPE_ATTRNAME);
+			typename = translate_type(rawtype,
 				node->get_ns_prop(TYPE_ATTRNAME, FSO_NAMESPACE),
 				interface_name + capitalize(name),
 				dbus_namespace);
@@ -916,7 +918,8 @@ public class BindingGenerator : Object {
 
 		INFO(@"   Generating property $name (originally $realname) of type $typename for $interface_name");
 
-		string accessimpl = (accesstype == "readonly") ? "get;" : "get; set;";
+		string owned_specifier = is_simple_type(rawtype) ? "" : "owned";
+		string accessimpl = (accesstype == "readonly") ? @"$owned_specifier get;" : @"$owned_specifier get; set;";
 
 		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
@@ -966,6 +969,22 @@ public class BindingGenerator : Object {
 			return vala_type + (type.has_prefix("a") ? "[]" : "");
 		}
 		return parse_type(type, out tail, type_name, dbus_namespace).replace("][", ",");
+	}
+
+	private bool is_simple_type(string type)
+	{
+		switch (type) {
+			case "b":
+			case "i":
+			case "n":
+			case "q":
+			case "t":
+			case "u":
+			case "x":
+			case "d":
+				return true;
+		}
+		return false;
 	}
 
 	private string parse_type(string type, out string tail, string type_name, string dbus_namespace)
