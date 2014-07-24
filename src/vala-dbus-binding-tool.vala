@@ -511,8 +511,8 @@ public class BindingGenerator : Object {
 		output.printf("%s}\n", get_indent());
 
 		if (structs_to_generate.size != 0) {
-			foreach (string name in structs_to_generate.keys) {
-				generate_struct(name, structs_to_generate.get(name), namespace_name);
+			foreach (var entry in structs_to_generate.entries) {
+				generate_struct(entry.key, entry.value, namespace_name);
 			}
 			structs_to_generate.clear();
 		}
