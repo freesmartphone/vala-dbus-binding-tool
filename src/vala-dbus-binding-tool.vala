@@ -911,7 +911,7 @@ public class BindingGenerator : Object {
 		string accesstype = "readwrite";
 		if (node->has_prop("access") != null) {
 			accesstype = node->get_prop("access");
-			if (accesstype != "readwrite" && accesstype != "readonly") {
+			if (accesstype != "readwrite" && accesstype != "readonly" && accesstype != "read") {
 				ERROR(@"In interface $interface_name property $name : Unknown access type: $accesstype");
 			}
 		}
