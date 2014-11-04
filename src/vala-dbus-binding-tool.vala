@@ -919,7 +919,7 @@ public class BindingGenerator : Object {
 		INFO(@"   Generating property $name (originally $realname) of type $typename for $interface_name");
 
 		string owned_specifier = is_simple_type(rawtype) ? "" : "owned";
-		string accessimpl = (accesstype == "readonly") ? @"$owned_specifier get;" : @"$owned_specifier get; set;";
+		string accessimpl = (accesstype == "readonly" || accesstype == "read") ? @"$owned_specifier get;" : @"$owned_specifier get; set;";
 
 		output.printf("\n");
 		output.printf("%s[DBus (name = \"%s\")]\n", get_indent(), realname);
