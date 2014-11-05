@@ -510,11 +510,14 @@ public class BindingGenerator : Object {
 		update_indent(-1);
 		output.printf("%s}\n", get_indent());
 
-		if (structs_to_generate.size != 0) {
-			foreach (string name in structs_to_generate.keys) {
-				generate_struct(name, structs_to_generate.get(name), namespace_name);
+		while (structs_to_generate.size != 0) {
+			Gee.Map<string, string> structs_to_generate_now
+				= new Gee.HashMap<string, string>(str_hash, str_equal, str_equal);
+			structs_to_generate_now.set_all(structs_to_generate);
+			foreach (var entry in structs_to_generate_now.entries) {
+				generate_struct(entry.key, entry.value, namespace_name);
 			}
-			structs_to_generate.clear();
+			structs_to_generate.unset_all(structs_to_generate_now);
 		}
 	}
 
