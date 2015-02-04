@@ -25,15 +25,13 @@ public enum Synchrony {
 internal class GeneratedNamespace {
 	public GeneratedNamespace parent;
 	public string name;
-	public Gee.Map<string, Xml.Node*> members
-	        = new Gee.HashMap<string, Xml.Node*>(str_hash, str_equal, direct_equal);
-	public Gee.Map<string, GeneratedNamespace> namespaces
-	        = new Gee.HashMap<string, GeneratedNamespace>(str_hash, str_equal, direct_equal);
+	public Gee.Map<string, Xml.Node*> members = new Gee.HashMap<string, Xml.Node*>();
+	public Gee.Map<string, GeneratedNamespace> namespaces = new Gee.HashMap<string, GeneratedNamespace>();
 }
 
 public class BindingGenerator : Object {
 
-	private static Set<string> registered_names = new HashSet<string>(str_hash, str_equal);
+	private static Set<string> registered_names = new HashSet<string>();
 	private static int verbosity;
 	private static int errors;
 	private static bool synced;
@@ -94,7 +92,7 @@ public class BindingGenerator : Object {
 		uint dbus_timeout = 120000;
 		synced = true;
 
-		Map<string,string> namespace_renaming = new HashMap<string,string>(str_hash, str_equal, str_equal);
+		Map<string,string> namespace_renaming = new HashMap<string,string>();
 
 		for (int i = 1; i < args.length; i++) {
 			string arg = args[i];
@@ -432,8 +430,8 @@ public class BindingGenerator : Object {
 
 	private GeneratedNamespace root_namespace = new GeneratedNamespace();
 
-	private Map<string, string> name_index = new HashMap<string, string>(str_hash, str_equal, str_equal);
-	private Map<string, string> error_name_index = new HashMap<string, string>(str_hash, str_equal, str_equal);
+	private Map<string, string> name_index = new HashMap<string, string>();
+	private Map<string, string> error_name_index = new HashMap<string, string>();
 
 	private void generate_namespace(GeneratedNamespace ns)
 	                throws GeneratorError {
@@ -486,8 +484,7 @@ public class BindingGenerator : Object {
 		}
 	}
 
-	private Gee.Map<string, string> structs_to_generate
-	        = new Gee.HashMap<string, string>(str_hash, str_equal, str_equal);
+	private Gee.Map<string, string> structs_to_generate = new Gee.HashMap<string, string>();
 
 	private void generate_interface(string interface_name, Xml.Node* node, Synchrony synchrony = Synchrony.AUTO)
 	                throws GeneratorError {
@@ -511,8 +508,7 @@ public class BindingGenerator : Object {
 		output.printf("%s}\n", get_indent());
 
 		while (structs_to_generate.size != 0) {
-			Gee.Map<string, string> structs_to_generate_now
-				= new Gee.HashMap<string, string>(str_hash, str_equal, str_equal);
+			Gee.Map<string, string> structs_to_generate_now	= new Gee.HashMap<string, string>();
 			structs_to_generate_now.set_all(structs_to_generate);
 			foreach (var entry in structs_to_generate_now.entries) {
 				generate_struct(entry.key, entry.value, namespace_name);
