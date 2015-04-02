@@ -38,6 +38,7 @@ AC_SUBST(DEPS_LIBS)
 AC_CONFIG_FILES([
 	Makefile
 	vala-dbus-binding-tool-1.0.pc
+	man/Makefile
 	src/Makefile
 ])
 AC_OUTPUT

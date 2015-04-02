@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
 SUBDIRS = \
+	man \
 	src
 
 pkgconfigdir = $(libdir)/pkgconfig

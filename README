@@ -1,2 +1,8 @@
 This package automates the creation of GObject interfaces out of DBus XML specifications.
 
+See README.md
+
+NOTE that README.md is also the source code for the manpage which has been generated with
+md2man 4.0.0 (https://github.com/sunaku/md2man/) using
+
+md2man-roff README.md >man/vala-dbus-binding-tool.1
