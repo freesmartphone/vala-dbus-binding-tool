@@ -1,3 +1,8 @@
+m4_define([vala-dbus-binding-tool_released], [1])
+m4_define([vala-dbus-binding-tool_base_version], [0.4.0])
+m4_define([vala-dbus-binding-tool_maybe_gitrev], m4_if(vala-dbus-binding-tool_released, [1], [], [m4_esyscmd([git show-ref --hash=5 HEAD | tr -d '\n\r'])]))
+m4_define([vala-dbus-binding-tool_version], m4_if(vala-dbus-binding-tool_released, [1], [vala-dbus-binding-tool_base_version], [vala-dbus-binding-tool_base_version-vala-dbus-binding-tool_maybe_gitrev]))
+
 AC_INIT([vala-dbus-binding-tool], [0.4.0], [fso@openphoenux.org], [vala-dbus-binding-tool])
 AC_CONFIG_SRCDIR([src/Makefile.am])
 AC_CONFIG_HEADERS(config.h)
@@ -9,10 +14,34 @@ AM_PROG_CC_C_O
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
-VALA_REQUIRED=0.11.6
-AC_PATH_PROG(VALAC, valac, valac)
-AC_SUBST(VALAC)
-m4_ifdef([AM_PROG_VALAC], [AM_PROG_VALAC([$VALA_REQUIRED])])
+#########################################################################################
+# Vala building options -- allows tarball builds without installing vala
+#########################################################################################
+
+VALA_REQUIRED=0.16.0
+
+AC_ARG_ENABLE([vala], AS_HELP_STRING([--enable-vala],[Enable building from Vala sources]),
+              [enable_vala=$enableval], [enable_vala=no])
+
+# Force Vala for non-release builds
+m4_if(mdbus_released, [1], [],
+      [
+        enable_vala=yes
+        echo "Vala compiler required for non-release builds; requiring Vala..."
+      ])
+
+if test "x$enable_vala" = "xyes" ; then
+    AM_PROG_VALAC([$VALA_REQUIRED])
+    if test "x$VALAC" = "x" ; then
+        AC_MSG_ERROR([Vala requested but valac is not installed])
+    fi
+fi
+
+AM_CONDITIONAL([HAVE_VALA], [test "x$enable_vala" = "xyes"])
+
+#########################################################################################
+# Check for various dependencies
+#########################################################################################
 
 AH_TEMPLATE([GETTEXT_PACKAGE], [Package name for gettext])
 GETTEXT_PACKAGE=vala-dbus-binding-tool
