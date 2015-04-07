@@ -1,9 +1,9 @@
-m4_define([vala-dbus-binding-tool_released], [1])
-m4_define([vala-dbus-binding-tool_base_version], [0.4.0])
+m4_define([vala-dbus-binding-tool_released], [0])
+m4_define([vala-dbus-binding-tool_base_version], [1.0])
 m4_define([vala-dbus-binding-tool_maybe_gitrev], m4_if(vala-dbus-binding-tool_released, [1], [], [m4_esyscmd([git show-ref --hash=5 HEAD | tr -d '\n\r'])]))
 m4_define([vala-dbus-binding-tool_version], m4_if(vala-dbus-binding-tool_released, [1], [vala-dbus-binding-tool_base_version], [vala-dbus-binding-tool_base_version-vala-dbus-binding-tool_maybe_gitrev]))
 
-AC_INIT([vala-dbus-binding-tool], [0.4.0], [fso@openphoenux.org], [vala-dbus-binding-tool])
+AC_INIT([vala-dbus-binding-tool], [vala-dbus-binding-tool_version], [fso@openphoenux.org], [vala-dbus-binding-tool])
 AC_CONFIG_SRCDIR([src/Makefile.am])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE([dist-bzip2])
