@@ -811,8 +811,8 @@ public class BindingGenerator : Object {
 		}
 		if (deprecated_method) {
 			if (deprecated_method_replaced_by.length == 0)
-				output.printf("[Deprecated]\n");
-			else output.printf("[Deprecated (replacement = \"%s\")]".printf(deprecated_method_replaced_by));
+				output.printf("[Version (deprecated = true)]\n");
+			else output.printf("[Version (deprecated = true, replacement = \"%s\")]".printf(deprecated_method_replaced_by));
 		}
 		output.printf("%spublic abstract%s %s %s(%s) throws %s;\n",
 			get_indent(), (async_method ? " async" : ""), return_value_type, name, args_builder.str, throws_builder.str);
