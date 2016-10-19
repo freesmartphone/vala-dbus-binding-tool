@@ -4,7 +4,7 @@
 vala\-dbus\-binding\-tool \- Create GObject interfaces from DBus introspection files
 .SH SYNOPSIS
 .PP
-\fB\fCvala\-dbus\-binding\-tool\fR [\fB\fC\-\-gdbus\fR] [\fB\fC\-\-api\-path\fR=\fIPATH\fP] [\fB\fC\-\-no\-synced\fR] [\fB\fC\-\-dbus\-timeout\fR=\fITIMEOUT\fP] [\fB\fC\-\-directory\fR=\fIDIR\fP] [\fB\fC\-\-strip\-namespace\fR=\fINS\fP]* [\fB\fC\-\-rename\-namespace\fR=\fIOLD\fINS:NEW\fPNS\fP]*
+\fB\fCvala\-dbus\-binding\-tool\fR [\fB\fC\-\-api\-path\fR=\fIPATH\fP] [\fB\fC\-\-no\-synced\fR] [\fB\fC\-\-dbus\-timeout\fR=\fITIMEOUT\fP] [\fB\fC\-\-directory\fR=\fIDIR\fP] [\fB\fC\-\-strip\-namespace\fR=\fINS\fP]* [\fB\fC\-\-rename\-namespace\fR=\fIOLD\fINS:NEW\fPNS\fP]*
 .SH DESCRIPTION
 .PP
 This package automates the creation of \fIGObject\fP interfaces out of \fIDBus XML\fP specifications. Given a well\-formatted \fB\fC\&.xml\fR introspection file, you get a corresponding \fB\fC\&.vala\fR file that contains the GObject\-interface.
@@ -47,7 +47,7 @@ Create interfaces for the freesmartphone.org DBus specifications
 .PP
 .RS
 .nf
-vala\-dbus\-binding\-tool \-\-api\-path=/usr/local/share/freesmartphone/xml \-\-directory=../src \-\-strip\-namespace=org \-\-rename\-namespace=freedesktop:FreeDesktop \-\-rename\-namespace=freesmartphone:FreeSmartphone \-\-gdbus
+vala\-dbus\-binding\-tool \-\-api\-path=/usr/local/share/freesmartphone/xml \-\-directory=../src \-\-strip\-namespace=org \-\-rename\-namespace=freedesktop:FreeDesktop \-\-rename\-namespace=freesmartphone:FreeSmartphone
 .fi
 .RE
 .SH BUGS
