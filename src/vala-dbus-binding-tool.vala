@@ -1094,7 +1094,7 @@ public class BindingGenerator : Object {
 
 	private string transform_registered_name(string? name) {
 		if (name != null && registered_names.contains(name)) {
-			return "@" + name;
+			return name + "_";
 		}
 		return name;
 	}
