@@ -1,6 +1,22 @@
-2015-04-02  Dr. Michael Lauer  <mickey@vanille-media.de>
+# Changelog
+All notable changes to vala-dbus-binding-tool will be documented in this file.
 
-	add a manpage
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
+
+## [Unreleased]
+
+### Added
+- A manpage (@mickeyl)
+
+### Changed
+- Modernized some Vala constructs (@tintou)
+- Bring back the high-level ChangeLog format (@mickeyl)
+
+### Removed
+- glib-dbus support (@tintou)
+
+## [0.4.1] - 2015-02-04
 
 2015-02-04  Dr. Michael Lauer  <mickey@vanille-media.de>
 
