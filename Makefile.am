@@ -10,4 +10,6 @@ dist_pkgconfig_DATA = vala-dbus-binding-tool-1.0.pc
 EXTRA_DIST = \
 	AUTHORS \
 	MAINTAINERS \
+	README.md \
+	CHANGELOG.md \
 	vapi
