@@ -1,4 +1,4 @@
-VALA-DBUS-BINDING-TOOL 1 "MARCH 2015" Linux "User Manuals"
+VALA-DBUS-BINDING-TOOL 1.0 Linux "User Manuals"
 ==========================================
 
 NAME
@@ -9,7 +9,7 @@ vala-dbus-binding-tool - Create GObject interfaces from DBus introspection files
 SYNOPSIS
 --------
 
-`vala-dbus-binding-tool` [`--gdbus`] [`--api-path`=*PATH*] [`--no-synced`] [`--dbus-timeout`=*TIMEOUT*] [`--directory`=*DIR*] [`--strip-namespace`=*NS*]\* [`--rename-namespace`=*OLD_NS:NEW_NS*]\*
+`vala-dbus-binding-tool` [`--api-path`=*PATH*] [`--no-synced`] [`--dbus-timeout`=*TIMEOUT*] [`--directory`=*DIR*] [`--strip-namespace`=*NS*]\* [`--rename-namespace`=*OLD_NS:NEW_NS*]\*
 
 DESCRIPTION
 -----------
@@ -54,7 +54,7 @@ EXAMPLE
 -------
 Create interfaces for the [freesmartphone.org DBus specifications](https://github.com/freesmartphone/specs) that have been installed at `/usr/local/share/freesmartphone/xml`:
 
-	vala-dbus-binding-tool --api-path=/usr/local/share/freesmartphone/xml --directory=../src --strip-namespace=org --rename-namespace=freedesktop:FreeDesktop --rename-namespace=freesmartphone:FreeSmartphone --gdbus
+	vala-dbus-binding-tool --api-path=/usr/local/share/freesmartphone/xml --directory=../src --strip-namespace=org --rename-namespace=freedesktop:FreeDesktop --rename-namespace=freesmartphone:FreeSmartphone
 
 BUGS
 ----
@@ -68,6 +68,7 @@ AUTHORS
 * Michael 'Mickey' Lauer <mlauer@vanille-media.de>
 * Frederik 'playya' Sdun <Frederik.Sdun@googlemail.com>
 * Dominik Fischer <d.f.fischer@web.de>
+* Corentin Noël <corentin@elementary.io>
 
 SEE ALSO
 --------
