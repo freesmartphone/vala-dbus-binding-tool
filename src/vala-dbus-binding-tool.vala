@@ -41,6 +41,7 @@ public class BindingGenerator : Object {
 		registered_names.add("namespace");
 		registered_names.add("public");
 		registered_names.add("private");
+		registered_names.add("register");
 		registered_names.add("internal");
 		registered_names.add("errordomain");
 		registered_names.add("class");
