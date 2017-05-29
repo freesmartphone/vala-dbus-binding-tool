@@ -18,7 +18,7 @@ AC_PROG_LIBTOOL
 # Vala building options -- allows tarball builds without installing vala
 #########################################################################################
 
-VALA_REQUIRED=0.36.0
+VALA_REQUIRED=0.30.0
 
 AC_ARG_ENABLE([vala], AS_HELP_STRING([--enable-vala],[Enable building from Vala sources]),
               [enable_vala=$enableval], [enable_vala=no])
