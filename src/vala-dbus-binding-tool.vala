@@ -982,10 +982,14 @@ public class BindingGenerator : Object {
 			return "uint8"; // uchar only works since post-vala 0.8.0 (see c4cf64b6590e5cce21febf98b1f3ff935d921fd5)
 		} else if (type.has_prefix("b")) {
 			return "bool";
-		} else if (type.has_prefix("n") || type.has_prefix("i")) {
-			return "int";
-		} else if (type.has_prefix("q") || type.has_prefix("u")) {
-			return "uint";
+		} else if (type.has_prefix("n")) {
+			return "int16";
+		} else if (type.has_prefix("i")) {
+			return "int32";
+		} else if (type.has_prefix("q")) {
+			return "uint16";
+		} else if (type.has_prefix("u")) {
+			return "uint32";
 		} else if (type.has_prefix("x")) {
 			return "int64";
 		} else if (type.has_prefix("t")) {
